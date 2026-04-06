@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab Inventory v1 Mock</title>
+  <style>
+    :root{
+      --bg:#f6f8fb; --card:#fff; --line:#e5e7eb; --text:#111827; --muted:#6b7280;
+      --nav:#0f172a; --navText:#e2e8f0; --primary:#111827; --accent:#2563eb;
+      --green:#166534; --greenBg:#dcfce7; --blue:#1d4ed8; --blueBg:#dbeafe;
+      --yellow:#a16207; --yellowBg:#fef3c7; --red:#b91c1c; --redBg:#fee2e2;
+      --purple:#7e22ce; --purpleBg:#f3e8ff; --slate:#475569; --slateBg:#e2e8f0;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+    .hidden{display:none!important}
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    .sidebar{background:var(--nav);color:#fff;padding:20px 16px}
+    .brand{font-size:20px;font-weight:800;margin-bottom:4px}
+    .subbrand{font-size:12px;color:#cbd5e1;margin-bottom:16px}
+    .rolebox{padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.04);margin-bottom:16px}
+    .rolebox .name{font-weight:700}
+    .nav{display:flex;flex-direction:column;gap:8px}
+    .nav button{all:unset;cursor:pointer;padding:11px 12px;border-radius:12px;color:var(--navText);font-size:14px}
+    .nav button.active,.nav button:hover{background:rgba(255,255,255,.11);color:#fff}
+    .main{padding:24px;overflow:auto}
+    .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px}
+    .title{font-size:28px;font-weight:800;letter-spacing:-.02em}
+    .subtitle{font-size:14px;color:var(--muted);margin-top:4px;max-width:900px}
+    .topActions{display:flex;gap:10px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+    .grid{display:grid;gap:16px}
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .two-col{display:grid;grid-template-columns:1.45fr .85fr;gap:16px}
+    h2,h3,h4{margin:0 0 8px}
+    .hint{font-size:13px;color:var(--muted);margin-bottom:10px}
+    .metric{font-size:28px;font-weight:800;margin-top:4px}
+    .muted{color:var(--muted)}
+    .small{font-size:12px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    input,select,textarea{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;font:inherit}
+    textarea{min-height:92px;resize:vertical}
+    .btn{border:none;background:var(--primary);color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+    .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .btn.danger{background:#fff;color:var(--red);border:1px solid #fecaca}
+    .btn.blue{background:var(--accent)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+    .toolbar > div{min-width:150px}
+    .tableWrap{overflow:auto}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{text-align:left;padding:12px;border-top:1px solid var(--line);vertical-align:top}
+    thead th{border-top:none;background:#f8fafc;color:#334155;font-weight:700}
+    .badge{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800}
+    .b-available{background:var(--greenBg);color:var(--green)}
+    .b-in_use{background:var(--blueBg);color:var(--blue)}
+    .b-low_stock{background:var(--yellowBg);color:var(--yellow)}
+    .b-expired{background:var(--redBg);color:var(--red)}
+    .b-quarantined{background:var(--purpleBg);color:var(--purple)}
+    .b-draft{background:var(--slateBg);color:var(--slate)}
+    .b-disposed{background:#f1f5f9;color:#475569;text-decoration:line-through}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .listItem{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}
+    .pillnav{display:flex;flex-wrap:wrap;gap:10px}
+    .pillnav button{all:unset;cursor:pointer;background:#fff;border:1px solid var(--line);padding:11px 13px;border-radius:14px;font-weight:700;font-size:14px}
+    .fieldGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .field{background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:12px}
+    .field .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .field .v{font-weight:700;word-break:break-word}
+    .timeline{display:flex;flex-direction:column;gap:12px}
+    .event{display:flex;justify-content:space-between;gap:16px;border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}
+    .section{display:none}
+    .section.active{display:block}
+    .message{margin-top:12px;padding:12px 14px;border-radius:12px;font-size:14px}
+    .success{background:var(--greenBg);color:var(--green)}
+    .info{background:#eef2ff;color:#3730a3}
+    .warn{background:var(--yellowBg);color:#92400e}
+    .tree ul{list-style:none;padding-left:18px}
+    .tree li{margin:6px 0}
+    .tree .node{display:inline-block;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+    .loginWrap{max-width:440px;margin:10vh auto;padding:20px}
+    .loginCard{background:#fff;border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 10px 30px rgba(15,23,42,.08)}
+    .kpi{display:flex;justify-content:space-between;align-items:end}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .b-priority-urgent{background:#fee2e2;color:#b91c1c;font-weight:800}
+    .b-priority-high{background:#fef3c7;color:#a16207;font-weight:800}
+    .b-priority-normal{background:#f0fdf4;color:#166534;font-weight:700}
+    @media (max-width:1100px){
+      .app{grid-template-columns:1fr}
+      .two-col,.grid-4,.grid-3,.grid-2,.fieldGrid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<div id="loginView" class="loginWrap">
+  <div class="loginCard">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div class="brand" style="color:#111827">Lab Inventory</div>
+      <button id="loginLangToggle" style="border:1px solid #e5e7eb;background:#fff;border-radius:8px;padding:5px 11px;font-size:13px;cursor:pointer;font-weight:600" onclick="toggleLang()">🌐 EN</button>
+    </div>
+    <div id="loginSubbrand" class="subbrand" style="color:#64748b;margin-bottom:16px">研究室向け在庫・発注・承認・受領・管理</div>
+    <label id="loginRoleLabel">ログインするロール</label>
+    <select id="loginRole">
+      <option value="STUDENT">学生</option>
+      <option value="PROFESSOR">教授</option>
+      <option value="SECRETARY">秘書</option>
+      <option value="ADMIN">管理者</option>
+    </select>
+    <label id="loginUserLabel" style="margin-top:12px">表示用ユーザー</label>
+    <select id="loginUser"></select>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn" id="loginBtn" onclick="login()">ログイン</button>
+    </div>
+    <div class="message info" id="loginHint" style="margin-top:12px">フロントモックです。主要業務フローを一通り試せます。</div>
+  </div>
+</div>
+<div id="appView" class="app hidden">
+  <aside class="sidebar">
+    <div class="brand">Lab Inventory</div>
+    <div class="subbrand" id="appSubbrand">v1 Mock</div>
+    <div class="rolebox">
+      <div class="small" style="color:#cbd5e1" id="sideLoggedIn">—</div>
+      <div class="name" id="sideUserName"></div>
+      <div class="small" id="sideUserRole"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn secondary" style="padding:6px 10px;font-size:12px" onclick="logout()" id="logoutBtn">Log out</button>
+        <button id="langToggle" class="btn secondary" style="padding:6px 10px;font-size:12px;font-weight:700" onclick="toggleLang()">🌐 EN</button>
+      </div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title" id="pageTitle"></div>
+        <div class="subtitle" id="pageSubtitle"></div>
+      </div>
+      <div class="topActions" id="topActions"></div>
+    </div>
+    <section id="dashboard" class="section"></section>
+    <section id="inventory" class="section"></section>
+    <section id="detail" class="section"></section>
+    <section id="request-new" class="section"></section>
+    <section id="requests" class="section"></section>
+    <section id="request-detail" class="section"></section>
+    <section id="approvals" class="section"></section>
+    <section id="approval-detail" class="section"></section>
+    <section id="receipts" class="section"></section>
+    <section id="receipt-history" class="section"></section>
+    <section id="aliquots" class="section"></section>
+    <section id="batches" class="section"></section>
+    <section id="locations" class="section"></section>
+    <section id="admin-home" class="section"></section>
+    <section id="admin-users" class="section"></section>
+    <section id="admin-products" class="section"></section>
+    <section id="admin-locations" class="section"></section>
+    <section id="admin-adjustments" class="section"></section>
+    <section id="admin-import" class="section"></section>
+    <section id="admin-audit" class="section"></section>
+    <section id="order-board" class="section"></section>
+    <section id="prof-dashboard" class="section"></section>
+    <section id="products" class="section"></section>
+    <section id="recipes" class="section"></section>
+  </main>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  I18N  ★値はすべてリテラル文字列。この辞書内で t() を呼ぶな★
+// ═══════════════════════════════════════════════════════════════
+const I18N={ja:{
+  /* nav */
+  dashboard:"ダッシュボード",inventory:"在庫検索",products:"製品登録",
+  recipes:"レシピ管理",requests:"依頼一覧",receipts:"受領登録",
+  receipt_history:"受領履歴",locations:"ロケーション",approvals:"承認待ち一覧",
+  admin_home:"管理者ダッシュボード",admin_users:"ユーザー管理",
+  admin_import:"CSV取込 / 出力",admin_audit:"監査ログ",
+  /* section titles & subtitles */
+  sec_dashboard:"ダッシュボード",sub_dashboard:"検索・使用・依頼・作るを最短で回すための学生中心画面です。",
+  sec_inventory:"在庫検索",sub_inventory:"製品名・カタログ番号・バーコード・ロット・場所で在庫を探します。",
+  sec_detail:"在庫詳細",sub_detail:"使用量登録、小分け、混合物作成、再発注の起点画面です。",
+  sec_request_new:"発注依頼作成",sub_request_new:"1行以上の明細を追加して依頼を作成します。",
+  sec_requests:"依頼一覧",sub_requests:"状態・進捗・下書きの管理を行います。",
+  sec_request_detail:"依頼詳細",sub_request_detail:"承認コメントと受領履歴を追跡します。",
+  sec_approvals:"承認待ち一覧",sub_approvals:"教授・秘書・管理者が最小操作で判断する画面です。",
+  sec_approval_detail:"承認詳細",sub_approval_detail:"現在庫も確認しながら承認・差し戻しを行います。",
+  sec_receipts:"受領登録",sub_receipts:"受領と在庫化を分けない設計です。全ロールが登録できます。",
+  sec_receipt_history:"受領履歴",sub_receipt_history:"過去の納品履歴とロットを確認します。",
+  sec_aliquots:"小分け作成",sub_aliquots:"元在庫から複数の子在庫を作成します。",
+  sec_batches:"混合物作成",sub_batches:"調製済み培地・混合液を新しい在庫として登録します。",
+  sec_locations:"ロケーション管理",sub_locations:"場所の階層確認・追加・編集・削除を行います。",
+  sec_products:"試薬・製品登録",sub_products:"製品マスタの追加・編集を行います。全員が操作できます。",
+  sec_recipes:"レシピ管理",sub_recipes:"繰り返し作る調製品・培地のテンプレートとプロトコルを管理します。",
+  sec_admin_home:"管理者ダッシュボード",sub_admin_home:"ユーザー管理・CSV・監査ログの運用保守メニューです。",
+  sec_admin_users:"ユーザー管理",sub_admin_users:"メンバーの追加・編集・削除を管理します。",
+  sec_admin_adjustments:"在庫調整（管理者）",sub_admin_adjustments:"数量補正・廃棄をシステム管理者が記録します。",
+  sec_admin_import:"CSV取込 / 出力",sub_admin_import:"既存Excelからの移行と運用保守を支えます。",
+  sec_admin_audit:"監査ログ",sub_admin_audit:"誰が何を変えたかを確認します。",
+  sec_order_board:"発注状況ボード",sub_order_board:"発注中・承認待ち・申請中の試薬を一覧で確認できます。",
+
+  /* status */
+  s_AVAILABLE:"使用可能",s_IN_USE:"使用中",s_LOW_STOCK:"低在庫",
+  s_EXPIRED:"期限切れ",s_QUARANTINED:"隔離",s_DISPOSED:"廃棄済み",
+  s_DRAFT:"下書き",s_SUBMITTED:"申請中",s_APPROVED:"承認済み",
+  s_ORDERED:"発注済み",s_PARTIALLY_RECEIVED:"一部受領",
+  s_COMPLETED:"完了",s_REJECTED:"差し戻し",s_CANCELLED:"キャンセル",
+  /* events */
+  e_RECEIVE:"受領",e_OPEN:"開封",e_USE:"使用",e_MOVE:"移動",
+  e_ALIQUOT_SOURCE_CONSUME:"小分け元消費",e_ALIQUOT_CHILD_CREATE:"小分け作成",
+  e_MIX_SOURCE_CONSUME:"混合元消費",e_MIX_CREATE:"混合物作成",
+  e_ADJUST:"棚卸調整",e_DISCARD:"廃棄",
+  /* roles */
+  role_STUDENT:"学生",role_PROFESSOR:"教授",role_SECRETARY:"秘書",role_ADMIN:"管理者",
+  /* priority */
+  pri_NORMAL:"通常",pri_HIGH:"高優先",pri_URGENT:"緊急",
+  /* categories */
+  cat_CHEMICAL:"化学",cat_BIOLOGICAL:"生物",cat_MEDIA:"培地",cat_BUFFER:"Buffer",cat_SAMPLE:"サンプル",
+  /* batch types */
+  btype_PREPARED_MEDIA:"調製培地",btype_PREPARED_BUFFER:"調製Buffer",btype_MIX:"混合液",btype_SAMPLE:"サンプル",
+  /* dashboard */
+  dash_total:"在庫アイテム数",dash_low:"低在庫",dash_pending:"自分の申請中",dash_expiring:"期限間近",
+  dash_4ops:"4つの基本操作",dash_low_alert:"⚠ 低在庫アラート",dash_low_ok:"✓ 低在庫の試薬はありません",
+  dash_expiry_h:"期限間近",dash_my_req:"自分の依頼",
+  op_find:"探す",op_find_desc:"製品名・Lot・場所で在庫を検索する",op_find_btn:"在庫検索へ",
+  op_use:"使う",op_use_desc:"在庫を選んで使用量を記録する",op_use_btn:"在庫を選ぶ",
+  op_order:"依頼する",op_order_desc:"不足試薬の発注依頼を出す",op_order_btn:"新規依頼",
+  op_make:"作る",op_make_desc:"培地・Buffer・サンプルを調製する",op_make_btn:"混合物を作成",
+  /* field labels */
+  fld_product:"製品名",fld_maker_cat:"メーカー / カタログ番号",
+  fld_current:"現在残量",fld_initial:"初期量",fld_lot:"ロット",
+  fld_barcode:"バーコード",fld_recv_date:"受領日",fld_opened:"開封日",
+  fld_expiry:"有効期限",fld_location:"保管場所",
+  /* table headers */
+  th_product:"品名",th_maker:"メーカー",th_catalog:"カタログ番号",th_cat:"カテゴリ",
+  th_storage:"保管条件",th_qty:"数量",th_unit:"単位",th_vendor:"業者",
+  th_recv:"受領日",th_req_no:"依頼No",th_lot:"Lot",th_location:"場所",
+  th_receiver:"受領者",th_status:"状態",th_name:"名前",th_email:"メール",
+  th_role:"ロール",th_code:"コード",th_req_qty:"依頼数量",th_rcv_qty:"受領数量",
+  th_remaining:"残量",th_expiry:"期限",th_date:"日付",th_actor:"実行者",
+  th_target:"対象",th_action:"操作",th_content:"内容",th_ops:"操作",th_note:"メモ",
+  /* form labels */
+  lbl_purpose:"使用目的 *",lbl_priority:"優先度",lbl_requester:"依頼者 *",
+  lbl_name:"名前 *",lbl_email:"メール *",lbl_role:"ロール",lbl_code:"メンバーコード",
+  lbl_prod_name:"製品名 *",lbl_alias:"別名 / 略称",lbl_maker:"メーカー",lbl_catalog:"カタログ番号",
+  lbl_category:"カテゴリ",lbl_unit:"単位",lbl_storage:"保管条件",lbl_reorder:"再発注点",
+  lbl_vendor:"業者",lbl_qty:"数量",lbl_lot:"ロット番号",lbl_location:"保管場所",
+  lbl_recv_by:"受領者",lbl_recv_date:"受領日",
+  lbl_parent_loc:"親ロケーション",lbl_loc_name:"名前 *",lbl_loc_type:"種別",
+  lbl_loc_note:"場所詳細",lbl_loc_note_hint:"（任意：棚の右端、青キャップ類など）",
+  lbl_use_qty:"使用量",lbl_use_note:"備考",
+  lbl_batch_name:"新しい名前 *",lbl_batch_type:"種別",lbl_batch_final:"最終容量（自由に設定可）",
+  lbl_recipe_name:"レシピ名 *",lbl_recipe_desc:"説明・メモ",
+  lbl_adj_item:"対象在庫",lbl_adj_qty:"調整後数量",lbl_adj_reason:"理由",lbl_move_dest:"移動先",
+  lbl_search:"フリー検索",lbl_all:"すべて",lbl_target_req:"対象依頼",lbl_target_line:"対象明細（未受領のみ）",
+  lbl_search_hint:"Enterで実行",
+  /* buttons */
+  btn_home:"ホームへ",btn_inv:"在庫検索",btn_detail:"詳細",
+  btn_edit:"編集",btn_delete:"削除",btn_save:"保存",btn_add:"追加",
+  btn_cancel:"キャンセル",btn_close:"閉じる",btn_open:"開く",
+  btn_approve:"承認する",btn_reject:"差し戻し",btn_order:"発注済みにする",
+  btn_receive:"登録して在庫化",btn_create:"作成して在庫化",
+  btn_new_req:"+ 新規依頼",btn_save_draft:"下書き保存",btn_submit:"申請提出",
+  btn_update_draft:"下書きを更新",btn_submit_draft:"更新して申請",
+  btn_new_recipe:"+ 新しいレシピを作成",btn_apply_recipe:"🧪 このレシピで作成",
+  btn_recipe_back:"← 一覧へ戻る",btn_login:"ログイン",btn_reload:"デモデータ再読込",btn_logout:"ログアウト",
+  btn_use:"登録する",btn_search:"検索する",btn_move:"移動する",btn_discard:"廃棄する",btn_adj:"数量調整",
+  btn_add_line:"+ 明細を追加",btn_add_comp:"+ 成分を追加",btn_receipt_hist:"受領履歴を見る",
+  btn_goto_inv:"在庫検索",btn_goto_req:"依頼一覧へ戻る",btn_goto_approvals:"承認一覧へ戻る",
+  btn_reorder:"再発注",btn_aliquot:"小分け",btn_batch_use:"混合物に使う",
+  btn_place_order:"発注依頼",
+  act_move:"📍 場所を変更",
+  /* location */
+  loc_title:"ロケーション階層",loc_hint:"クリックで選択 / 在庫・編集ができます。",
+  loc_selected:"選択中:",loc_items:"格納物一覧",loc_no_items:"この場所に在庫はありません。",
+  loc_add:"ロケーションを追加",loc_root:"(ルート)",loc_none:"ロケーションがありません。",
+  loc_deleted:"（削除済みの場所）",
+  /* messages */
+  msg_no_inventory:"条件に一致する在庫はありません。",
+  msg_no_requests:"依頼はありません。",msg_no_approvals:"承認待ちはありません。",
+  msg_no_history:"受領履歴はありません。",msg_no_events:"履歴はありません。",
+  msg_no_children:"子在庫はありません。",msg_no_related:"関連在庫はありません。",
+  msg_no_loc_items:"この場所に在庫はありません。",
+  msg_no_low:"低在庫の試薬はありません。",msg_no_expiring:"期限間近の試薬はありません。",
+  msg_no_req_sel:"依頼が選択されていません。",msg_no_approval_sel:"承認対象が選択されていません。",
+  msg_no_receipts:"受領登録できる依頼がありません。",
+  msg_use_qty:"使用量を正しく入力してください。",msg_use_over:"残量を超えています。",
+  msg_add_line:"明細を1行以上追加してください。",
+  msg_enter_name:"名前を入力してください。",msg_enter_email:"名前とメールを入力してください。",
+  msg_enter_product:"製品名を入力してください。",msg_enter_qty:"製品名と正の数量を入力してください。",
+  msg_inv_detail:"在庫詳細を見る",msg_receipt_hist_btn:"受領履歴を見る",
+  msg_draft_saved:"下書きを保存しました。",msg_submitted:"申請しました。",
+  msg_approved:"承認しました。",msg_rejected:"差し戻しました。",msg_ordered:"発注済みに更新しました。",
+  msg_received:"受領登録しました。",msg_disposed_aliquot:"廃棄済みの在庫からは小分けできません。",
+  msg_receipt_check:"明細と数量を確認してください。",
+  msg_approval_no_perm:"承認権限がありません。",
+  msg_only_submitted:"申請中の依頼のみ操作できます。",msg_order_approved:"承認済みの依頼のみ発注済みにできます。",
+  msg_other_draft:"自分の依頼のみ編集できます。",msg_other_submit:"自分の依頼のみ申請できます。",
+  msg_self_delete:"ログイン中のユーザーは削除できません。",
+  msg_prod_linked:"この製品に紐づく在庫があります。在庫がなくなってから削除してください。",
+  msg_loc_inv:"この場所（子階層含む）に在庫があります。先に移動してください。",
+  msg_aliquot_ok:" 本の子在庫を作成しました。元在庫の残量: ",
+  msg_aliquot_err:"合計量が残量を超えています。",
+  msg_batch_no_name:"名前を入力してください。",msg_batch_no_comp:"成分を1つ以上追加してください。",
+  msg_batch_qty_err:"成分の在庫と数量を確認してください。",
+  msg_batch_over:"残量を超えている成分があります。",msg_batch_final_err:"最終容量を正しく入力してください。",
+  msg_adj_done:"数量を調整しました。",msg_moved:"在庫を移動しました。",
+  msg_discarded:"廃棄済みにしました（ステータス: DISPOSED）。",
+  msg_created_product:"製品を追加しました。",msg_created_user:"ユーザーを追加しました。",msg_created_loc:"ロケーションを追加しました。",
+  msg_move_sel:"移動先を選択してください。",msg_qty_check:"数量を確認してください。",
+  msg_recipe_name:"レシピ名を入力してください。",msg_recipe_comp:"成分を1つ以上追加してください。",
+  msg_saved:"保存しました。",msg_move_done:"移動しました",
+  /* section-specific */
+  aliquot_title:"小分け作成",aliquot_hint:"元在庫の残量を超えない範囲で子在庫を作成します。子在庫は親と同じ単位で作成されます。",
+  aliquot_source:"元在庫",aliquot_count:"小分け数",aliquot_each:"各量",aliquot_total:"合計消費量:",
+  batch_title:"混合物作成",batch_hint:"調製済み培地・Buffer・サンプルを新しい在庫として生成します。最終容量は自由に設定できます。",
+  batch_load:"💡 レシピから読み込み：",batch_comp_total:"成分合計:",
+  recipe_title:"レシピ管理",recipe_new:"新しいレシピを作成",
+  recipe_comp:"成分構成",recipe_comp_hint:"製品登録済みの試薬から選びます。比率（mL や g など）を記入してください。",
+  recipe_protocol:"プロトコルファイル（Word / PDF）",recipe_protocol_hint:"任意。ファイルを選択すると名前が記録されます（本実装ではサーバーに保存されます）。",
+  recipe_empty:"レシピがありません。「新しいレシピを作成」から登録してください。",
+  recipe_back:"← 一覧へ戻る",recipe_editing:"編集中。変更後「保存」を押してください。",
+  receipt_hint:"受領と在庫化を一つの操作にまとめています。全ロールが登録できます。完了した明細は選択肢から消え、受領履歴に移ります。",
+  admin_menu:"管理者メニュー",admin_hint:"薬品管理・Webアプリ全体を管理するシステム担当者向けメニューです。製品登録・ロケーション管理・在庫操作は通常の学生フローから行えます。",
+  admin_other:"その他のアクセス（管理者も利用可）",
+  admin_user_count:"ユーザー数",admin_inv_count:"在庫アイテム数",admin_log_count:"監査ログ件数",
+  adj_title:"数量調整",adj_hint:"棚卸差異を補正します。",adj_default:"棚卸差異",
+  move_title:"場所移動 / 廃棄",move_reason:"理由",move_default:"整理のため",move_default2:"保管場所の整理",
+  audit_title:"監査ログ",audit_hint:"誰が何を変更したかを一覧で確認します。",
+  csv_title:"CSV取込 / 出力",csv_hint:"既存Excelからの移行を支えるためのモックです。",csv_only:"テンプレートDLのみ実装",
+  sec_use_title:"使用量登録",sec_use_hint:"最頻出操作です。",sec_children:"子在庫",sec_history:"履歴",
+  sec_recipe_used:"混合物レシピ",sec_recipe_comp_title:"このバッチの構成成分",
+  approval_hint:"判断に必要な情報だけを表示します。",
+  approval_requester:"依頼者",approval_purpose:"用途",approval_stock:"現在庫",approval_hist:"最近の購入履歴",
+  approval_goto_receipt:"→ 受領登録へ",
+  /* login */
+  login_role:"ログインするロール",login_user:"表示用ユーザー",
+  login_hint:"フロントモックです。主要業務フローを一通り試せます。",
+  login_brand:"研究室向け在庫・発注・承認・受領・管理",
+  logged_in:"ログイン中",
+  nav_requests:"依頼一覧",nav_products:"製品登録",nav_receipts:"受領登録",
+  btn_place_order_short:"発注依頼",
+  req_all_title:"全依頼一覧",req_my_title:"自分の依頼一覧",
+  req_all_hint:"全員の依頼を確認できます。",
+  fld_submitted:"申請日",fld_approved:"承認日",fld_ordered:"発注日",
+  lbl_priority_badge:"優先度",
+  pri_badge_URGENT:"🔴 緊急",pri_badge_HIGH:"🟡 高優先",pri_badge_NORMAL:"🟢 通常",
+  inv_lot_bc:"Lot",
+  app_subbrand:"研究室向け在庫管理 / v1",
+  unit_bottle:"本",
+  csv_dl:"テンプレートDL",csv_users:"ユーザーCSV",csv_products:"製品CSV",csv_inventory:"在庫CSV",
+  search_title:"検索条件",search_results:"検索結果",result_count:"件",
+  expiring_label:"期限",actor_label:"実行者",loc_view:"場所を見る",
+  btn_adj_goto:"在庫調整へ",use_note_default:"使用量登録",use_ok:"登録しました。残量",
+  comp_header:"成分",req_list_requester:"依頼者",req_list_purpose:"用途",
+  req_list_priority:"優先度",draft_label:"（下書き）",move_reason_lbl:"理由",
+  adj_qty_label:"調整後数量",adj_reason_label:"理由",move_dest_label:"移動先",
+  csv_warn:"このモックではアップロード処理までは実装していません。",
+  backup_title:"データバックアップ / 復元",
+  backup_hint:"現在のすべてのデータをJSONファイルとしてダウンロードできます。また、バックアップファイルを読み込んで復元できます。",
+  backup_btn:"💾 バックアップをダウンロード",
+  restore_btn:"📂 バックアップから復元",
+  restore_hint:"バックアップファイル (.json) を選択してください。現在のデータは上書きされます。",
+  restore_ok:"復元しました。",
+  restore_err:"バックアップファイルの読み込みに失敗しました。",
+  restore_confirm:"現在のデータを上書きして復元しますか？",
+  backup_meta:"バックアップ情報",
+  export_users_full:"ユーザー一覧 (実データ)",
+  export_products_full:"製品一覧 (実データ)",
+  export_inventory_full:"在庫一覧 (実データ)",
+
+  /* サブタイトル (sub_) */
+  sub_dashboard:"検索・使用・依頼・作るを最短で回すための学生中心画面です。",
+  sub_inventory:"製品名・カタログ番号・バーコード・ロット・場所で在庫を探します。",
+  sub_detail:"使用量登録、小分け、混合物作成、再発注の起点画面です。",
+  sub_request_new:"1行以上の明細を追加してから申請してください。",
+  sub_requests:"状態・進捗・下書きの管理を行います。",
+  sub_request_detail:"承認コメントと受領履歴を追跡します。",
+  sub_approvals:"教授・秘書・管理者が最小操作で判断する画面です。",
+  sub_approval_detail:"現在庫も確認しながら承認・差し戻しを行います。",
+  sub_receipts:"受領と在庫化を分けない設計です。全ロールが登録できます。",
+  sub_receipt_history:"過去の納品履歴とロットを確認します。",
+  sub_aliquots:"元在庫から複数の子在庫を作成します。",
+  sub_batches:"調製済み培地・混合液を新しい在庫として登録します。",
+  sub_locations:"場所の階層確認・追加・編集・削除を行います。",
+  sub_products:"製品マスタの追加・編集を行います。全員が操作できます。",
+  sub_recipes:"繰り返し作る調製品・培地のテンプレートとプロトコルを管理します。",
+  sub_admin_home:"ユーザー管理・CSV・監査ログの運用保守メニューです。",
+  sub_admin_users:"メンバーの追加・編集・削除を管理します。",
+  sub_admin_adjustments:"数量補正・廃棄をシステム管理者が記録します。",
+  sub_admin_import:"既存Excelからの移行と運用保守を支えます。",
+  sub_admin_audit:"誰が何を変えたかを確認します。",
+  sub_order_board:"現在発注中・承認待ち・申請中の試薬を一覧で確認できます。",
+  prof_dashboard:"教授ダッシュボード",nav_prof_dashboard:"ダッシュボード",
+  sec_prof_dashboard:"教授ダッシュボード",sub_prof_dashboard:"研究室全体の承認・在庫状況を確認します。",sub_prof_dashboard:"研究室全体の承認・在庫状況を確認します。",
+  sec_dashboard_sec:"秘書ダッシュボード",sub_sec_dashboard:"受領・発注状況と承認待ちを確認します。",
+  kpi_pending_approval:"承認待ち",kpi_ordered:"発注済み（入荷待ち）",
+  kpi_recv_waiting:"受領待ち品目",kpi_recv_done_today:"本日受領",
+  quick_approvals:"承認待ちクイックリスト",quick_recv:"受領待ちクイックリスト",
+  quick_approvals_hint:"緊急度の高い順。詳細で承認できます。",
+  quick_recv_hint:"発注済み・一部受領中の試薬。受領登録へ飛べます。",
+  recent_approved:"最近の承認履歴",recent_recv:"最近の受領履歴",
+  goto_approval_detail:"詳細で承認",
+  btn_quick_approve:"✓ 承認する",btn_quick_reject:"✗ 差し戻し",
+  goto_recv:"受領登録へ →",
+  quick_approve_done:"承認しました。",quick_reject_done:"差し戻しました。",
+
+  no_pending_approval:"承認待ちはありません。",
+  no_recv_waiting:"受領待ちの品目はありません。",
+  order_board:"発注状況ボード",nav_order_board:"発注状況",
+  order_board_sub:"現在発注中・承認待ち・申請中の試薬を一覧で確認できます。",
+  order_board_empty:"発注中・承認待ちの依頼はありません。",
+  ob_submitted:"申請中",ob_approved:"承認済み（発注待ち）",
+  ob_ordered:"発注済み（入荷待ち）",ob_partial:"一部受領済み",
+  ob_qty_req:"依頼数",ob_qty_rcv:"受領済",ob_progress:"進捗",
+
+  order_board_empty:"発注中・承認待ちの依頼はありません。",
+  ob_submitted:"申請中",ob_approved:"承認済み（発注待ち）",
+  ob_ordered:"発注済み（入荷待ち）",ob_partial:"一部受領済み",
+  ob_qty_req:"依頼数",ob_qty_rcv:"受領済",ob_progress:"進捗",
+},en:{
+  /* nav */
+  dashboard:"Dashboard",inventory:"Inventory",products:"Products",
+  recipes:"Recipes",requests:"Requests",receipts:"Receive Items",
+  receipt_history:"Receipt History",locations:"Locations",approvals:"Approvals",
+  admin_home:"Admin Dashboard",admin_users:"User Management",
+  admin_import:"CSV Import/Export",admin_audit:"Audit Log",
+  /* section titles & subtitles */
+  sec_dashboard:"Dashboard",sub_dashboard:"The central hub for search, use, request, and create.",
+  sec_inventory:"Inventory Search",sub_inventory:"Search by product name, catalog number, barcode, or lot.",
+  sec_detail:"Inventory Detail",sub_detail:"Starting point for usage, aliquoting, mixing, and reordering.",
+  sec_request_new:"New Purchase Request",sub_request_new:"Add one or more lines, then submit.",
+  sec_requests:"Requests",sub_requests:"Manage status, progress, and drafts.",
+  sec_request_detail:"Request Detail",sub_request_detail:"Track approval comments and receipt history.",
+  sec_approvals:"Pending Approvals",sub_approvals:"Minimal-click approval screen.",
+  sec_approval_detail:"Approval Detail",sub_approval_detail:"Review current stock while approving or rejecting.",
+  sec_receipts:"Receive Items",sub_receipts:"Receiving and stock creation in one step. All roles.",
+  sec_receipt_history:"Receipt History",sub_receipt_history:"Review past deliveries and lot numbers.",
+  sec_aliquots:"Create Aliquots",sub_aliquots:"Split parent inventory into multiple children.",
+  sec_batches:"Create Mixture",sub_batches:"Register prepared media or mixtures as new inventory.",
+  sec_locations:"Locations",sub_locations:"Browse, add, edit, and delete locations.",
+  sec_products:"Products",sub_products:"Add and edit the product master. All roles.",
+  sec_recipes:"Recipes",sub_recipes:"Manage templates and protocols for repeated preparations.",
+  sec_admin_home:"Admin Dashboard",sub_admin_home:"User management, CSV, and audit log.",
+  sec_admin_users:"User Management",sub_admin_users:"Add, edit, and remove lab members.",
+  sec_admin_adjustments:"Inventory Adjustment",sub_admin_adjustments:"Record quantity corrections and discards.",
+  sec_admin_import:"CSV Import/Export",sub_admin_import:"Supports migration from Excel.",
+  sec_admin_audit:"Audit Log",sub_admin_audit:"See who changed what and when.",
+  sec_order_board:"Order Status Board",sub_order_board:"View all pending and ordered reagents at a glance.",
+
+  /* status */
+  s_AVAILABLE:"Available",s_IN_USE:"In Use",s_LOW_STOCK:"Low Stock",
+  s_EXPIRED:"Expired",s_QUARANTINED:"Quarantined",s_DISPOSED:"Disposed",
+  s_DRAFT:"Draft",s_SUBMITTED:"Submitted",s_APPROVED:"Approved",
+  s_ORDERED:"Ordered",s_PARTIALLY_RECEIVED:"Partially Received",
+  s_COMPLETED:"Completed",s_REJECTED:"Rejected",s_CANCELLED:"Cancelled",
+  /* events */
+  e_RECEIVE:"Received",e_OPEN:"Opened",e_USE:"Used",e_MOVE:"Moved",
+  e_ALIQUOT_SOURCE_CONSUME:"Aliquot (parent)",e_ALIQUOT_CHILD_CREATE:"Aliquot created",
+  e_MIX_SOURCE_CONSUME:"Mix (source)",e_MIX_CREATE:"Mixture created",
+  e_ADJUST:"Stock adjustment",e_DISCARD:"Discarded",
+  /* roles */
+  role_STUDENT:"Student",role_PROFESSOR:"Professor",role_SECRETARY:"Secretary",role_ADMIN:"Admin",
+  /* priority */
+  pri_NORMAL:"Normal",pri_HIGH:"High",pri_URGENT:"Urgent",
+  /* categories */
+  cat_CHEMICAL:"Chemical",cat_BIOLOGICAL:"Biological",cat_MEDIA:"Media",cat_BUFFER:"Buffer",cat_SAMPLE:"Sample",
+  /* batch types */
+  btype_PREPARED_MEDIA:"Prepared Media",btype_PREPARED_BUFFER:"Prepared Buffer",btype_MIX:"Mixed Solution",btype_SAMPLE:"Sample",
+  /* dashboard */
+  dash_total:"Total Items",dash_low:"Low Stock",dash_pending:"My Pending",dash_expiring:"Expiring Soon",
+  dash_4ops:"4 Core Actions",dash_low_alert:"⚠ Low Stock Alert",dash_low_ok:"✓ No low stock items",
+  dash_expiry_h:"Expiring Soon",dash_my_req:"My Requests",
+  op_find:"Find",op_find_desc:"Search by name, lot, or location",op_find_btn:"Search",
+  op_use:"Use",op_use_desc:"Select an item and log usage",op_use_btn:"Select Item",
+  op_order:"Request",op_order_desc:"Submit a purchase request",op_order_btn:"New Request",
+  op_make:"Create",op_make_desc:"Prepare media, buffer, or samples",op_make_btn:"Create Mixture",
+  /* field labels */
+  fld_product:"Product",fld_maker_cat:"Manufacturer / Catalog No.",
+  fld_current:"Current Amount",fld_initial:"Initial Amount",fld_lot:"Lot",
+  fld_barcode:"Barcode",fld_recv_date:"Received Date",fld_opened:"Opened Date",
+  fld_expiry:"Expiry Date",fld_location:"Location",
+  /* table headers */
+  th_product:"Product",th_maker:"Manufacturer",th_catalog:"Catalog No.",th_cat:"Category",
+  th_storage:"Storage",th_qty:"Qty",th_unit:"Unit",th_vendor:"Vendor",
+  th_recv:"Received",th_req_no:"Request No.",th_lot:"Lot",th_location:"Location",
+  th_receiver:"Received By",th_status:"Status",th_name:"Name",th_email:"Email",
+  th_role:"Role",th_code:"Code",th_req_qty:"Requested",th_rcv_qty:"Received",
+  th_remaining:"Remaining",th_expiry:"Expiry",th_date:"Date",th_actor:"User",
+  th_target:"Target",th_action:"Action",th_content:"Details",th_ops:"Actions",th_note:"Note",
+  /* form labels */
+  lbl_purpose:"Purpose *",lbl_priority:"Priority",lbl_requester:"Requester *",
+  lbl_name:"Name *",lbl_email:"Email *",lbl_role:"Role",lbl_code:"Member Code",
+  lbl_prod_name:"Product Name *",lbl_alias:"Alias",lbl_maker:"Manufacturer",lbl_catalog:"Catalog No.",
+  lbl_category:"Category",lbl_unit:"Unit",lbl_storage:"Storage",lbl_reorder:"Reorder Pt.",
+  lbl_vendor:"Vendor",lbl_qty:"Quantity",lbl_lot:"Lot Number",lbl_location:"Location",
+  lbl_recv_by:"Received By",lbl_recv_date:"Received Date",
+  lbl_parent_loc:"Parent Location",lbl_loc_name:"Name *",lbl_loc_type:"Type",
+  lbl_loc_note:"Location Details",lbl_loc_note_hint:"(optional: right side of shelf, etc.)",
+  lbl_use_qty:"Amount Used",lbl_use_note:"Notes",
+  lbl_batch_name:"New Name *",lbl_batch_type:"Type",lbl_batch_final:"Final Volume (freely set)",
+  lbl_recipe_name:"Recipe Name *",lbl_recipe_desc:"Description",
+  lbl_adj_item:"Target Item",lbl_adj_qty:"New Quantity",lbl_adj_reason:"Reason",lbl_move_dest:"Destination",
+  lbl_search:"Search",lbl_all:"All",lbl_target_req:"Target Request",lbl_target_line:"Target Line (unreceived only)",
+  lbl_search_hint:"Press Enter to search",
+  /* buttons */
+  btn_home:"Home",btn_inv:"Inventory",btn_detail:"Detail",
+  btn_edit:"Edit",btn_delete:"Delete",btn_save:"Save",btn_add:"Add",
+  btn_cancel:"Cancel",btn_close:"Close",btn_open:"Open",
+  btn_approve:"Approve",btn_reject:"Reject",btn_order:"Mark Ordered",
+  btn_receive:"Register & Add to Stock",btn_create:"Create & Add to Stock",
+  btn_new_req:"+ New Request",btn_save_draft:"Save Draft",btn_submit:"Submit",
+  btn_update_draft:"Update Draft",btn_submit_draft:"Update & Submit",
+  btn_new_recipe:"+ New Recipe",btn_apply_recipe:"🧪 Use This Recipe",
+  btn_recipe_back:"← Back",btn_login:"Log In",btn_reload:"Reload Demo",btn_logout:"Log Out",
+  btn_use:"Log Usage",btn_search:"Search",btn_move:"Move",btn_discard:"Discard",btn_adj:"Adjust Qty",
+  btn_add_line:"+ Add Line",btn_add_comp:"+ Add Component",btn_receipt_hist:"View Receipt History",
+  btn_goto_inv:"Inventory",btn_goto_req:"Back to Requests",btn_goto_approvals:"Back to Approvals",
+  btn_reorder:"Reorder",btn_aliquot:"Aliquot",btn_batch_use:"Use in Mixture",
+  btn_place_order:"Purchase Request",
+  act_move:"📍 Change Location",
+  /* location */
+  loc_title:"Location Hierarchy",loc_hint:"Click to select / view inventory and edit.",
+  loc_selected:"Selected:",loc_items:"Contents",loc_no_items:"No inventory in this location.",
+  loc_add:"Add Location",loc_root:"(Root)",loc_none:"No locations.",loc_deleted:"(deleted location)",
+  /* messages */
+  msg_no_inventory:"No inventory matches your search.",
+  msg_no_requests:"No requests.",msg_no_approvals:"No pending approvals.",
+  msg_no_history:"No receipt history.",msg_no_events:"No history.",
+  msg_no_children:"No child items.",msg_no_related:"No related inventory.",
+  msg_no_loc_items:"No inventory in this location.",
+  msg_no_low:"No low stock items.",msg_no_expiring:"No items expiring soon.",
+  msg_no_req_sel:"No request selected.",msg_no_approval_sel:"No request selected.",
+  msg_no_receipts:"No pending receipts.",
+  msg_use_qty:"Please enter a valid quantity.",msg_use_over:"Exceeds current stock.",
+  msg_add_line:"Please add at least one line.",
+  msg_enter_name:"Please enter a name.",msg_enter_email:"Please enter name and email.",
+  msg_enter_product:"Please enter a product name.",msg_enter_qty:"Enter a product name and positive quantity.",
+  msg_inv_detail:"View Inventory",msg_receipt_hist_btn:"View Receipt History",
+  msg_draft_saved:"Draft saved.",msg_submitted:"Submitted.",
+  msg_approved:"Approved.",msg_rejected:"Rejected.",msg_ordered:"Marked as ordered.",
+  msg_received:"Receipt registered.",msg_disposed_aliquot:"Cannot aliquot a disposed item.",
+  msg_receipt_check:"Check line item and quantity.",
+  msg_approval_no_perm:"No approval permission.",
+  msg_only_submitted:"Only submitted requests can be processed.",msg_order_approved:"Only approved requests can be marked ordered.",
+  msg_other_draft:"You can only edit your own drafts.",msg_other_submit:"You can only submit your own drafts.",
+  msg_self_delete:"Cannot delete your own account.",
+  msg_prod_linked:"This product has linked inventory. Delete inventory first.",
+  msg_loc_inv:"This location has inventory. Move it first.",
+  msg_aliquot_ok:" child item(s) created. Parent remaining: ",
+  msg_aliquot_err:"Total exceeds parent stock.",
+  msg_batch_no_name:"Please enter a name.",msg_batch_no_comp:"Please add at least one component.",
+  msg_batch_qty_err:"Check component inventory and quantities.",
+  msg_batch_over:"A component exceeds available stock.",msg_batch_final_err:"Please enter a valid final volume.",
+  msg_adj_done:"Quantity adjusted.",msg_moved:"Moved.",
+  msg_discarded:"Disposed.",
+  msg_created_product:"Product added.",msg_created_user:"User added.",msg_created_loc:"Location added.",
+  msg_move_sel:"Please select a destination.",msg_qty_check:"Please check the quantity.",
+  msg_recipe_name:"Please enter a recipe name.",msg_recipe_comp:"Please add at least one component.",
+  msg_saved:"Saved.",msg_move_done:"Moved to",
+  /* section-specific */
+  aliquot_title:"Create Aliquots",aliquot_hint:"Create child items within the parent's remaining stock.",
+  aliquot_source:"Source Item",aliquot_count:"Number",aliquot_each:"Amount Each",aliquot_total:"Total to consume:",
+  batch_title:"Create Mixture",batch_hint:"Register prepared media, buffers, or samples as new inventory. Final volume is free to set.",
+  batch_load:"💡 Load from recipe:",batch_comp_total:"Total:",
+  recipe_title:"Recipe Management",recipe_new:"Create New Recipe",
+  recipe_comp:"Components",recipe_comp_hint:"Select from registered reagents. Enter amounts (mL, g, etc.).",
+  recipe_protocol:"Protocol File (Word / PDF)",recipe_protocol_hint:"Optional. The filename is recorded.",
+  recipe_empty:"No recipes. Click '+ New Recipe' to create one.",
+  recipe_back:"← Back",recipe_editing:"Editing. Click Save when done.",
+  receipt_hint:"Receiving and inventory creation in one step. All roles. Completed lines disappear from this form.",
+  admin_menu:"Admin Menu",admin_hint:"For lab system administrators.",
+  admin_other:"Also accessible to admin",
+  admin_user_count:"Users",admin_inv_count:"Items",admin_log_count:"Log Entries",
+  adj_title:"Quantity Adjustment",adj_hint:"Correct inventory discrepancies.",adj_default:"Stock correction",
+  move_title:"Move / Discard",move_reason:"Reason",move_default:"Reorganization",move_default2:"Reorganization",
+  audit_title:"Audit Log",audit_hint:"See who changed what and when.",
+  csv_title:"CSV Import / Export",csv_hint:"Supports migration from existing Excel sheets.",csv_only:"Template download only",
+  sec_use_title:"Log Usage",sec_use_hint:"Most frequent action.",sec_children:"Child Items",sec_history:"History",
+  sec_recipe_used:"Mixture Recipe",sec_recipe_comp_title:"Components of this batch",
+  approval_hint:"Shows only information needed for a decision.",
+  approval_requester:"Requester",approval_purpose:"Purpose",approval_stock:"Current Stock",approval_hist:"Recent Purchases",
+  approval_goto_receipt:"→ Go to Receive Items",
+  /* login */
+  login_role:"Role",login_user:"Display User",
+  login_hint:"This is a front-end mock. Try all major workflows.",
+  login_brand:"Lab Inventory Management System",
+  logged_in:"Logged in as",
+  nav_requests:"Requests",nav_products:"Products",nav_receipts:"Receive Items",
+  btn_place_order_short:"Purchase Request",
+  req_all_title:"All Requests",req_my_title:"My Requests",
+  prof_dashboard:"Professor Dashboard",nav_prof_dashboard:"Dashboard",
+  sec_prof_dashboard:"Dashboard",sub_prof_dashboard:"Lab-wide approval and inventory overview.",sub_prof_dashboard:"Lab-wide approval and inventory overview.",
+  sec_dashboard_sec:"Secretary Dashboard",sub_sec_dashboard:"Receipt, order status, and pending approvals.",
+  kpi_pending_approval:"Pending Approvals",kpi_ordered:"Ordered (Awaiting Delivery)",
+  kpi_recv_waiting:"Awaiting Receipt",kpi_recv_done_today:"Received Today",
+  quick_approvals:"Quick Approval List",quick_recv:"Awaiting Receipt List",
+  quick_approvals_hint:"Sorted by urgency. Open detail to approve.",
+  quick_recv_hint:"Ordered or partially received items. Jump to receipt registration.",
+  recent_approved:"Recent Approvals",recent_recv:"Recent Receipts",
+  goto_approval_detail:"Open Detail",btn_quick_approve:"✓ Approve",btn_quick_reject:"✗ Reject",goto_recv:"Go to Receive →",
+  quick_approve_done:"Approved.",quick_reject_done:"Rejected.",
+  no_pending_approval:"No pending approvals.",
+  no_recv_waiting:"No items awaiting receipt.",
+  order_board:"Order Status Board",nav_order_board:"Order Status",order_board_sub:"View all pending, approved, and ordered reagents at a glance.",
+  order_board_empty:"No pending or ordered requests.",
+  ob_submitted:"Submitted",ob_approved:"Approved (Awaiting Order)",
+  ob_ordered:"Ordered (Awaiting Delivery)",ob_partial:"Partially Received",
+  ob_qty_req:"Requested",ob_qty_rcv:"Received",ob_progress:"Progress",
+
+  fld_submitted:"Submitted",fld_approved:"Approved",fld_ordered:"Ordered",
+  lbl_priority_badge:"Priority",
+  pri_badge_URGENT:"🔴 Urgent",pri_badge_HIGH:"🟡 High",pri_badge_NORMAL:"🟢 Normal",
+  req_all_hint:"View all requests from all users.",
+  inv_lot_bc:"Lot",
+  app_subbrand:"Lab Inventory System / v1",
+  unit_bottle:"bottle(s)",
+  csv_dl:"Download Template",csv_users:"User CSV",csv_products:"Product CSV",csv_inventory:"Inventory CSV",
+  search_title:"Search Filters",search_results:"Search Results",result_count:"item(s)",
+  expiring_label:"Expiry",actor_label:"By",loc_view:"View Location",
+  btn_adj_goto:"Go to Adjustments",use_note_default:"Usage logged",use_ok:"Logged. Remaining:",
+  comp_header:"Component",req_list_requester:"Requester",req_list_purpose:"Purpose",
+  req_list_priority:"Priority",draft_label:"(Draft)",move_reason_lbl:"Reason",
+  adj_qty_label:"New Quantity",adj_reason_label:"Reason",move_dest_label:"Destination",
+  csv_warn:"Upload processing is not implemented in this mock.",
+  backup_title:"Data Backup / Restore",
+  backup_hint:"Download all current data as a JSON file, or restore from a backup.",
+  backup_btn:"💾 Download Backup",
+  restore_btn:"📂 Restore from Backup",
+  restore_hint:"Select a backup file (.json). Current data will be overwritten.",
+  restore_ok:"Restored successfully.",
+  restore_err:"Failed to read backup file.",
+  restore_confirm:"Overwrite current data and restore?",
+  backup_meta:"Backup Info",
+  export_users_full:"User List (live data)",
+  export_products_full:"Product List (live data)",
+  export_inventory_full:"Inventory List (live data)",
+
+}};
+// 優先度ソート順
+function priorityOrder(p){ return {URGENT:0,HIGH:1,NORMAL:2}[p]??2; }
+function priorityBadge(p){ return t("pri_badge_"+p)||p; }
+
+// ───────────────────────────────────────────────────────────────
+//  t() は I18N の後に定義。辞書内部では絶対に呼ばない
+// ───────────────────────────────────────────────────────────────
+function t(k){ return I18N[ui.lang]?.[k] ?? I18N.ja[k] ?? k; }
+
+// [FIX BUG-12] ハードコード日付を排除 — 動的に今日の日付を生成
+const TODAY = new Date().toISOString().slice(0, 10);
+
+const initialState = {
+  users: [
+    {id:"u-stu-1", name:"中嶋 啓太", email:"nk1@example.com", role:"STUDENT", memberCode:"NK1", isActive:true},
+    {id:"u-stu-2", name:"青木 花子", email:"ab2@example.com", role:"STUDENT", memberCode:"AB2", isActive:true},
+    {id:"u-prof-1", name:"小林 教授", email:"prof@example.com", role:"PROFESSOR", memberCode:"PRF", isActive:true},
+    {id:"u-sec-1", name:"秘書A", email:"sec@example.com", role:"SECRETARY", memberCode:"SEC", isActive:true},
+    {id:"u-admin-1", name:"管理者", email:"admin@example.com", role:"ADMIN", memberCode:"ADM", isActive:true},
+  ],
+  vendors: [
+    {id:"v-1", name:"Thermo Fisher"},
+    {id:"v-2", name:"FUJIFILM Wako"},
+    {id:"v-3", name:"Sigma-Aldrich"},
+  ],
+  products: [
+    { id:"prod-dmem", name:"DMEM", aliasName:"Dulbecco's Modified Eagle Medium", manufacturer:"Gibco", vendorId:"v-1", catalogNumber:"11965-092", category:"MEDIA", reorderPoint:100, defaultUnit:"mL", storageCondition:"4C", isActive:true },
+    { id:"prod-pbs", name:"PBS 1x", aliasName:"PBS", manufacturer:"FUJIFILM Wako", vendorId:"v-2", catalogNumber:"166-23555", category:"BUFFER", reorderPoint:1, defaultUnit:"本", storageCondition:"RT", isActive:true },
+    { id:"prod-fbs", name:"FBS", aliasName:"Fetal Bovine Serum", manufacturer:"Gibco", vendorId:"v-1", catalogNumber:"26140-079", category:"BIOLOGICAL", reorderPoint:50, defaultUnit:"mL", storageCondition:"-20C", isActive:true },
+    { id:"prod-ps", name:"Penicillin-Streptomycin", aliasName:"Pen/Strep", manufacturer:"Gibco", vendorId:"v-1", catalogNumber:"15140-122", category:"BIOLOGICAL", reorderPoint:10, defaultUnit:"mL", storageCondition:"4C", isActive:true },
+    { id:"prod-trypsin", name:"Trypsin-EDTA", aliasName:"Trypsin", manufacturer:"Gibco", vendorId:"v-1", catalogNumber:"25200-056", category:"BIOLOGICAL", reorderPoint:10, defaultUnit:"mL", storageCondition:"4C", isActive:true },
+    { id:"prod-dmso", name:"DMSO", aliasName:"Dimethyl sulfoxide", manufacturer:"Sigma-Aldrich", vendorId:"v-3", catalogNumber:"D2650", category:"CHEMICAL", reorderPoint:50, defaultUnit:"mL", storageCondition:"RT", isActive:true },
+  ],
+  locations: [
+    { id:"loc-room", name:"NARIC103", type:"ROOM", parentId:null, note:"", isActive:true },
+    { id:"loc-shelfA", name:"薬品棚A", type:"SHELF", parentId:"loc-room", note:"右側", isActive:true },
+    { id:"loc-shelfA-lower", name:"下段", type:"POSITION", parentId:"loc-shelfA", note:"右端", isActive:true },
+    { id:"loc-fridgeA", name:"冷蔵庫A", type:"FRIDGE", parentId:"loc-room", note:"", isActive:true },
+    { id:"loc-fridgeA-upper", name:"上段", type:"POSITION", parentId:"loc-fridgeA", note:"", isActive:true },
+    { id:"loc-box01", name:"Box-01", type:"BOX", parentId:"loc-fridgeA-upper", note:"青キャップ類", isActive:true },
+    { id:"loc-box02", name:"Box-02", type:"BOX", parentId:"loc-fridgeA-upper", note:"aliquot専用", isActive:true },
+    { id:"loc-freezer20", name:"-20C Freezer", type:"FREEZER", parentId:"loc-room", note:"", isActive:true },
+    { id:"loc-drawer1", name:"Drawer-1", type:"POSITION", parentId:"loc-freezer20", note:"FBS専用", isActive:true },
+  ],
+  inventory: [
+    { id:"inv-dmem-001", productId:"prod-dmem", parentItemId:null, displayName:"DMEM", barcode:"INV-DMEM-001", lotNumber:"A12345", receivedDate:"2026-04-04", openedDate:"2026-04-05", expirationDate:"2026-08-31", initialQuantity:500, currentQuantity:350, quantityUnit:"mL", status:"IN_USE", locationId:"loc-box01", createdById:"u-sec-1" },
+    { id:"inv-pbs-001", productId:"prod-pbs", parentItemId:null, displayName:"PBS 1x", barcode:"INV-PBS-001", lotNumber:"PBS2026-01", receivedDate:"2026-03-28", openedDate:null, expirationDate:"2027-03-31", initialQuantity:1, currentQuantity:1, quantityUnit:"本", status:"LOW_STOCK", locationId:"loc-shelfA-lower", createdById:"u-sec-1" },
+    { id:"inv-fbs-001", productId:"prod-fbs", parentItemId:null, displayName:"FBS Lot A102", barcode:"INV-FBS-001", lotNumber:"A102", receivedDate:"2026-03-20", openedDate:null, expirationDate:"2026-05-10", initialQuantity:500, currentQuantity:120, quantityUnit:"mL", status:"AVAILABLE", locationId:"loc-drawer1", createdById:"u-sec-1" },
+    { id:"inv-ps-001", productId:"prod-ps", parentItemId:null, displayName:"Penicillin-Streptomycin", barcode:"INV-PS-001", lotNumber:"PS-001", receivedDate:"2026-03-20", openedDate:null, expirationDate:"2026-09-30", initialQuantity:100, currentQuantity:40, quantityUnit:"mL", status:"AVAILABLE", locationId:"loc-box01", createdById:"u-sec-1" },
+    { id:"inv-trypsin-001", productId:"prod-trypsin", parentItemId:null, displayName:"Trypsin-EDTA", barcode:"INV-TRYPSIN-001", lotNumber:"TR-001", receivedDate:"2026-03-21", openedDate:null, expirationDate:"2026-05-15", initialQuantity:100, currentQuantity:30, quantityUnit:"mL", status:"AVAILABLE", locationId:"loc-box01", createdById:"u-sec-1" },
+    { id:"inv-dmso-001", productId:"prod-dmso", parentItemId:null, displayName:"DMSO", barcode:"INV-DMSO-001", lotNumber:"DMSO-01", receivedDate:"2026-03-15", openedDate:null, expirationDate:"2028-03-15", initialQuantity:500, currentQuantity:420, quantityUnit:"mL", status:"AVAILABLE", locationId:"loc-shelfA-lower", createdById:"u-sec-1" },
+    { id:"inv-dmem-aq-001", productId:"prod-dmem", parentItemId:"inv-dmem-001", displayName:"DMEM aliquot 01", barcode:"INV-DMEM-AQ-001", lotNumber:"A12345", receivedDate:"2026-04-06", openedDate:null, expirationDate:"2026-05-31", initialQuantity:50, currentQuantity:50, quantityUnit:"mL", status:"AVAILABLE", locationId:"loc-box02", createdById:"u-stu-1" },
+    { id:"inv-dmem-aq-002", productId:"prod-dmem", parentItemId:"inv-dmem-001", displayName:"DMEM aliquot 02", barcode:"INV-DMEM-AQ-002", lotNumber:"A12345", receivedDate:"2026-04-06", openedDate:null, expirationDate:"2026-05-31", initialQuantity:50, currentQuantity:50, quantityUnit:"mL", status:"AVAILABLE", locationId:"loc-box02", createdById:"u-stu-1" },
+    { id:"inv-medium-a-001", productId:null, parentItemId:null, displayName:"Medium-A", barcode:"INV-MEDIUM-A-001", lotNumber:null, receivedDate:"2026-04-06", openedDate:null, expirationDate:"2026-04-20", initialQuantity:455, currentQuantity:455, quantityUnit:"mL", status:"AVAILABLE", locationId:"loc-box02", createdById:"u-stu-1" },
+  ],
+  requests: [
+    { id:"req-1", requestNo:"PR-202604-0001", requesterId:"u-stu-1", requesterCodeSnapshot:"NK1", status:"SUBMITTED", priority:"NORMAL", purpose:"細胞培養用試薬補充", submittedAt:"2026-04-06", approvedAt:null, approverId:null, approvalComment:null, orderedAt:null, lines:[
+      {id:"req-1-line-1", productId:"prod-pbs", vendorId:"v-2", productNameSnapshot:"PBS 1x", manufacturerSnapshot:"FUJIFILM Wako", catalogNumberSnapshot:"166-23555", quantityRequested:4, quantityUnit:"本"}
+    ]},
+    { id:"req-2", requestNo:"PR-202604-0002", requesterId:"u-stu-2", requesterCodeSnapshot:"AB2", status:"PARTIALLY_RECEIVED", priority:"HIGH", purpose:"培地追加購入", submittedAt:"2026-04-05", approvedAt:"2026-04-05", approverId:"u-prof-1", approvalComment:"承認", orderedAt:"2026-04-05", lines:[
+      {id:"req-2-line-1", productId:"prod-dmem", vendorId:"v-1", productNameSnapshot:"DMEM", manufacturerSnapshot:"Gibco", catalogNumberSnapshot:"11965-092", quantityRequested:2, quantityUnit:"本"}
+    ]},
+    { id:"req-3", requestNo:"PR-202604-0003", requesterId:"u-stu-1", requesterCodeSnapshot:"NK1", status:"COMPLETED", priority:"NORMAL", purpose:"Trypsin補充", submittedAt:"2026-04-02", approvedAt:"2026-04-02", approverId:"u-prof-1", approvalComment:"承認", orderedAt:"2026-04-02", lines:[
+      {id:"req-3-line-1", productId:"prod-trypsin", vendorId:"v-1", productNameSnapshot:"Trypsin-EDTA", manufacturerSnapshot:"Gibco", catalogNumberSnapshot:"25200-056", quantityRequested:1, quantityUnit:"本"}
+    ]},
+    // [FIX BUG-04/MISS-01] DRAFTデモ — 複数明細サンプル
+    { id:"req-4", requestNo:"PR-202604-0004", requesterId:"u-stu-1", requesterCodeSnapshot:"NK1", status:"DRAFT", priority:"HIGH", purpose:"FBS・Trypsin追加（下書き）", submittedAt:null, approvedAt:null, approverId:null, approvalComment:null, orderedAt:null, lines:[
+      {id:"req-4-line-1", productId:"prod-fbs",     vendorId:"v-1", productNameSnapshot:"FBS",         manufacturerSnapshot:"Gibco", catalogNumberSnapshot:"26140-079",  quantityRequested:2, quantityUnit:"本"},
+      {id:"req-4-line-2", productId:"prod-trypsin", vendorId:"v-1", productNameSnapshot:"Trypsin-EDTA", manufacturerSnapshot:"Gibco", catalogNumberSnapshot:"25200-056", quantityRequested:1, quantityUnit:"本"}
+    ]},
+  ],
+  receipts: [
+    { id:"rcp-1", purchaseRequestId:"req-2", purchaseRequestLineId:"req-2-line-1", receivedById:"u-sec-1", receivedDate:"2026-04-06", quantityReceived:1, quantityUnit:"本", lotNumber:"B777", expirationDate:"2026-10-31", locationId:"loc-box01", note:"1本先着" }
+  ],
+  events: [
+    { id:"evt-1", inventoryItemId:"inv-dmem-001", eventType:"RECEIVE", quantityDelta:500, quantityUnit:"mL", actorUserId:"u-sec-1", eventAt:"2026-04-04", notes:"受領登録" },
+    { id:"evt-2", inventoryItemId:"inv-dmem-001", eventType:"OPEN", quantityDelta:0, quantityUnit:"mL", actorUserId:"u-stu-1", eventAt:"2026-04-05", notes:"開封" },
+    { id:"evt-3", inventoryItemId:"inv-dmem-001", eventType:"USE", quantityDelta:-50, quantityUnit:"mL", actorUserId:"u-stu-1", eventAt:"2026-04-05", notes:"細胞培養用" },
+    { id:"evt-4", inventoryItemId:"inv-dmem-aq-001", eventType:"ALIQUOT_CHILD_CREATE", quantityDelta:50, quantityUnit:"mL", actorUserId:"u-stu-1", eventAt:"2026-04-06", notes:"DMEM aliquot 01 作成" },
+    { id:"evt-5", inventoryItemId:"inv-medium-a-001", eventType:"MIX_CREATE", quantityDelta:455, quantityUnit:"mL", actorUserId:"u-stu-1", eventAt:"2026-04-06", notes:"Medium-A 作成完了" },
+    { id:"evt-6", inventoryItemId:"inv-dmem-001", eventType:"MOVE", quantityDelta:0, quantityUnit:"mL", actorUserId:"u-admin-1", eventAt:"2026-04-06", notes:"監査のため確認済み" },
+  ],
+  // [FIX BUG-06/MISS-03] DerivedBatch / DerivedBatchComponent — 混合物レシピと構成成分
+  derivedBatches: [
+    { id:"db-medium-a-001", name:"Medium-A", batchType:"PREPARED_MEDIA", resultItemId:"inv-medium-a-001", createdById:"u-stu-1", createdAt:"2026-04-06" }
+  ],
+  derivedBatchComponents: [
+    { id:"dbc-1", derivedBatchId:"db-medium-a-001", sourceItemId:"inv-dmem-001", quantityUsed:400, quantityUnit:"mL" },
+    { id:"dbc-2", derivedBatchId:"db-medium-a-001", sourceItemId:"inv-fbs-001",  quantityUsed:50,  quantityUnit:"mL" },
+    { id:"dbc-3", derivedBatchId:"db-medium-a-001", sourceItemId:"inv-ps-001",   quantityUsed:5,   quantityUnit:"mL" },
+  ],
+  // [v4] レシピ — 繰り返し作成する混合物・調製品のテンプレート
+  recipes:[
+    { id:"rec-001", name:"Complete DMEM", description:"標準細胞培養培地 (10% FBS + 1% Pen/Strep)",
+      batchType:"PREPARED_MEDIA",
+      components:[
+        { productId:"prod-dmem",  quantity:450, unit:"mL", note:"基礎培地" },
+        { productId:"prod-fbs",   quantity:50,  unit:"mL", note:"ウシ胎児血清 10%" },
+        { productId:"prod-ps",    quantity:5,   unit:"mL", note:"抗生物質 1%" },
+      ],
+      protocolFileName:"Complete_DMEM_protocol_v2.pdf", createdById:"u-stu-1", createdAt:"2026-04-01", isActive:true
+    },
+    { id:"rec-002", name:"2% FBS DMEM", description:"低血清条件用",
+      batchType:"PREPARED_MEDIA",
+      components:[
+        { productId:"prod-dmem", quantity:490, unit:"mL", note:"基礎培地" },
+        { productId:"prod-fbs",  quantity:10,  unit:"mL", note:"ウシ胎児血清 2%" },
+      ],
+      protocolFileName:null, createdById:"u-stu-2", createdAt:"2026-04-03", isActive:true
+    },
+  ]
+};
+// localStorage から state を復元、なければ initialState を使う
+function loadStateFromStorage(){
+  try{
+    const saved = localStorage.getItem("labInventoryState");
+    if(saved){
+      const parsed = JSON.parse(saved);
+      // バージョン確認（initialState にないキーが増えた場合の互換対応）
+      if(parsed && parsed.users && parsed.inventory && parsed.products){
+        return parsed;
+      }
+    }
+  }catch(e){ /* 壊れていたら無視 */ }
+  return JSON.parse(JSON.stringify(initialState));
+}
+function saveState(){
+  try{ localStorage.setItem("labInventoryState", JSON.stringify(state)); }catch(e){}
+}
+let state = loadStateFromStorage();
+// [FIX BUG-03] currentRequestId を null に — 他人の依頼をデフォルト表示しない
+// 追加: editingDraftId / pendingLines / pendingBatchComps
+let ui = {
+  currentUserId:"u-stu-1", currentRole:"STUDENT",
+  currentSection:"dashboard", currentDetailId:"inv-dmem-001",
+  currentRequestId:null, currentLocationId:"loc-box01",
+  editingDraftId:null, pendingLines:[], pendingBatchComps:[],
+  editingRecipeComps:null, lang:"ja",
+};
+function sectionMeta(id){
+  const idk=id.replace(/-/g,"_");
+  const lang=ui?.lang||"ja";
+  const title = I18N[lang]?.["sec_"+idk] ?? I18N.ja["sec_"+idk]
+             ?? I18N[lang]?.[idk]         ?? I18N.ja[idk]
+             ?? id;
+  const sub   = I18N[lang]?.["sub_"+idk] ?? I18N.ja["sub_"+idk] ?? "";
+  return [title, sub];
+}
+const roleHomes = { STUDENT:"dashboard", PROFESSOR:"prof-dashboard", SECRETARY:"prof-dashboard", ADMIN:"admin-home" };
+function $(id){ return document.getElementById(id); }
+function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+function currentUser(){ return state.users.find(u=>u.id===ui.currentUserId); }
+function userById(id){ return state.users.find(u=>u.id===id); }
+function vendorById(id){ return state.vendors.find(v=>v.id===id); }
+function productById(id){ return state.products.find(p=>p.id===id); }
+function requestById(id){ return state.requests.find(r=>r.id===id); }
+function locationById(id){ return state.locations.find(l=>l.id===id); }
+function inventoryById(id){ return state.inventory.find(i=>i.id===id); }
+function loadDemo(){ state = clone(initialState); saveState(); populateUsers(($("loginRole") && $("loginRole").value) || "STUDENT"); }
+function logout(){
+  saveState(); // ログアウト前に保存
+  $("appView").classList.add("hidden");
+  $("loginView").classList.remove("hidden");
+  ui.currentUserId = ""; ui.currentRole = "";
+}
+function populateUsers(role){
+  const select = $("loginUser");
+  const users = state.users.filter(u => u.role === role);
+  if(!select) return;
+  select.innerHTML = users.map(u=>`<option value="${u.id}">${u.name}</option>`).join("");
+  if(users.length){ select.value = users[0].id; }
+}
+function initLoginSelectors(){
+  const roleSelect = $("loginRole");
+  if(!roleSelect) return;
+  populateUsers(roleSelect.value || "STUDENT");
+  roleSelect.addEventListener("change", ()=>populateUsers(roleSelect.value));
+}
+// 言語設定を復元
+try{ const _sl=localStorage.getItem("labInventoryLang"); if(_sl) ui.lang=_sl; }catch(e){}
+updateLoginUI();
+initLoginSelectors();
+function toggleLang(){
+  ui.lang = ui.lang==="ja"?"en":"ja";
+  try{ localStorage.setItem("labInventoryLang", ui.lang); }catch(e){}
+  const lb=$("langToggle"); if(lb) lb.textContent=ui.lang==="ja"?"🌐 EN":"🌐 JP";
+  const llb=$("loginLangToggle"); if(llb) llb.textContent=ui.lang==="ja"?"🌐 EN":"🌐 JP";
+  updateLoginUI();
+  if($("appView")&&!$("appView").classList.contains("hidden")){
+    const _sm=sectionMeta(ui.currentSection);
+    $("pageTitle").textContent=_sm[0]||"";
+    $("pageSubtitle").textContent=_sm[1]||"";
+    const _ab=$("appSubbrand"); if(_ab) _ab.textContent=t("app_subbrand");
+    renderNav(); updateTopbar(); render();
+  }
+}
+function updateLoginUI(){
+  const isEn=ui.lang==="en";
+  [["loginRoleLabel",t("login_role")],["loginUserLabel",t("login_user")],
+   ["loginBtn",t("btn_login")],
+   ["loginHint",t("login_hint")],["loginSubbrand",t("login_brand")],
+   ["loginLangToggle",isEn?"🌐 JP":"🌐 EN"],["logoutBtn",t("btn_logout")],["appSubbrand",t("app_subbrand")]
+  ].forEach(([id,txt])=>{const el=$(id);if(el)el.textContent=txt;});
+  const roleEl=$("loginRole");
+  if(roleEl){
+    const cur=roleEl.value;
+    roleEl.innerHTML=["STUDENT","PROFESSOR","SECRETARY","ADMIN"]
+      .map(v=>`<option value="${v}"${v===cur?" selected":""}>${t("role_"+v)}</option>`).join("");
+    roleEl.value=cur;
+    populateUsers(cur);
+  }
+}
+
+function login(){ ui.currentRole = $("loginRole").value; ui.currentUserId = $("loginUser").value; ui.currentRequestId=null; ui.editingDraftId=null; ui.pendingLines=[]; ui.pendingBatchComps=[]; $("loginView").classList.add("hidden"); $("appView").classList.remove("hidden"); renderNav(); updateTopbar(); gotoByRoleHome(); }
+function gotoByRoleHome(){ activateSection(roleHomes[ui.currentRole]); }
+
+// [v4] レシピをナビに追加
+function navSectionsForRole(role){
+  if(role === "STUDENT")
+    return ["dashboard","inventory","products","recipes","requests","receipts","locations"];
+  if(role === "PROFESSOR" || role === "SECRETARY")
+    return ["prof-dashboard","approvals","receipts","receipt-history","requests","inventory","products","recipes","locations"];
+  if(role === "ADMIN")
+    return ["admin-home","admin-users","admin-import","admin-audit"];
+  return ["dashboard"];
+}
+function allowedSectionsForRole(role){
+  const common = ["inventory","detail","request-new","requests","request-detail",
+    "aliquots","batches","locations","products","recipes","receipts","receipt-history","order-board","prof-dashboard"];
+  if(role === "STUDENT")    return ["dashboard", ...common];
+  if(role === "PROFESSOR" || role === "SECRETARY")
+    return ["approvals","approval-detail", ...common];
+  if(role === "ADMIN")
+    return ["admin-home","admin-users","admin-import","admin-audit","admin-adjustments", ...common];
+  return ["dashboard"];
+}
+function navLabel(id){
+  const k=id.replace(/-/g,"_");
+  const lang=ui?.lang||"ja";
+  return I18N[lang]?.["nav_"+k] ?? I18N.ja["nav_"+k]
+      ?? I18N[lang]?.[k]        ?? I18N.ja[k]
+      ?? id;
+}
+function renderNav(){
+  const items = navSectionsForRole(ui.currentRole);
+  $("nav").innerHTML = items.map(id=>`<button data-id="${id}" class="${ui.currentSection===id?'active':''}">${navLabel(id)}</button>`).join("");
+  $("nav").onclick = (e)=>{ const btn=e.target.closest("button[data-id]"); if(!btn) return; activateSection(btn.dataset.id); };
+  const u=currentUser();
+  $("sideLoggedIn").textContent = t("logged_in");
+  $("sideUserName").textContent = u?.name||"";
+  $("sideUserRole").textContent = (t("role_"+(u?.role||""))||u?.role||"")+(u?.memberCode?` / ${u.memberCode}`:"");
+  const lb=$("langToggle"); if(lb) lb.textContent=ui.lang==="ja"?"🌐 EN":"🌐 JP";
+  const lo=$("logoutBtn"); if(lo) lo.textContent=t("btn_logout");
+  const ab=$("appSubbrand"); if(ab) ab.textContent=t("app_subbrand");
+}
+// [FIX BUG-14] 管理者画面では「在庫検索」ボタンを非表示
+function updateTopbar(){
+  const ta = $("topActions"); if(!ta) return;
+  const showSearch = (ui.currentRole !== "ADMIN");
+  ta.innerHTML = `<button class="btn secondary" onclick="gotoByRoleHome()">${t("btn_home")}</button>${showSearch?`<button class="btn secondary" onclick="activateSection('inventory')">${t("btn_inv")}</button>`:""}`; 
+}
+function activateSection(id){ const allowed = allowedSectionsForRole(ui.currentRole); if(!allowed.includes(id)) return; ui.currentSection = id; document.querySelectorAll(".section").forEach(s => s.classList.remove("active")); $(id).classList.add("active"); renderNav(); updateTopbar(); const _sm=sectionMeta(id); $("pageTitle").textContent=_sm[0]||""; $("pageSubtitle").textContent=_sm[1]||""; render(); }
+function statusClass(status){ return {AVAILABLE:"b-available", IN_USE:"b-in_use", LOW_STOCK:"b-low_stock", EXPIRED:"b-expired", QUARANTINED:"b-quarantined", DISPOSED:"b-disposed", DRAFT:"b-draft", SUBMITTED:"b-in_use", APPROVED:"b-available", ORDERED:"b-in_use", PARTIALLY_RECEIVED:"b-low_stock", COMPLETED:"b-available", REJECTED:"b-expired", CANCELLED:"b-draft"}[status] || "b-draft"; }
+function statusLabel(s){ return t("s_"+s)||s; }
+function fmtQty(v){ const n = Number(v||0); return Number.isInteger(n) ? String(n) : n.toFixed(3).replace(/\.?0+$/,''); }
+function locationPath(id){
+  if(!id) return "-";
+  const names=[];
+  let cur=locationById(id);
+  if(!cur) return t("loc_deleted");  // 削除済みロケーションへの参照
+  while(cur){ names.unshift(cur.name); cur=cur.parentId?locationById(cur.parentId):null; }
+  return names.join(" > ");
+}
+// [FIX BUG-12] ハードコード日付を TODAY 定数に置き換え
+function recalcInventoryStatus(item){ const p=item.productId?productById(item.productId):null; if(item.expirationDate && item.expirationDate < TODAY) return "EXPIRED"; if(item.currentQuantity <= 0) return "LOW_STOCK"; if(p && p.reorderPoint != null && Number(item.currentQuantity) <= Number(p.reorderPoint)) return "LOW_STOCK"; if(item.openedDate && item.currentQuantity < item.initialQuantity) return "IN_USE"; return "AVAILABLE"; }
+function actorName(id){ return userById(id)?.name || "-"; }
+function eventLabel(e){ return t("e_"+e)||e; }
+function nextId(prefix){ return prefix + "-" + Math.random().toString(36).slice(2,9); }
+function nextRequestNo(){ const nums = state.requests.map(r => Number((r.requestNo.split("-").pop()||"0"))); const max = Math.max(0, ...nums); return "PR-202604-" + String(max+1).padStart(4,"0"); }
+// [FIX BUG-12] eventPush もハードコード日付を TODAY に修正
+function eventPush(data){ state.events.unshift({ id: nextId("evt"), eventAt: TODAY, ...data }); }
+function requestReceipts(reqId){ return state.receipts.filter(r=>r.purchaseRequestId===reqId); }
+function receivedQtyForLine(lineId){ return state.receipts.filter(r=>r.purchaseRequestLineId===lineId).reduce((s,r)=>s+Number(r.quantityReceived),0); }
+function recalcRequestStatus(req){
+  const totals=req.lines.map(l=>({requested:Number(l.quantityRequested),received:receivedQtyForLine(l.id)}));
+  const totalRequested=totals.reduce((s,t)=>s+t.requested,0);
+  const totalReceived=totals.reduce((s,t)=>s+t.received,0);
+  if(totalReceived >= totalRequested) return "COMPLETED";
+  if(totalReceived > 0) return "PARTIALLY_RECEIVED";
+  // 受領がまだゼロ → 現在のステータスを維持（APPROVED/ORDERED はそのまま）
+  return req.status;
+}
+function renderDashboard(){
+  const low=state.inventory.filter(i=>i.status==="LOW_STOCK" && i.status!=="DISPOSED");
+  const expiring=state.inventory.filter(i=>i.expirationDate&&i.status!=="DISPOSED").sort((a,b)=>a.expirationDate.localeCompare(b.expirationDate)).slice(0,5);
+  const mine=state.requests.filter(r=>r.requesterId===ui.currentUserId).slice(0,4);
+  const myEvents=state.events.filter(e=>e.actorUserId===ui.currentUserId).slice(0,5);
+
+  // 低在庫カード — 進捗バー付き
+  function lowStockCard(i){
+    const pct = i.initialQuantity>0 ? Math.round(i.currentQuantity/i.initialQuantity*100) : 0;
+    const barColor = pct<=20?"#ef4444": pct<=40?"#f97316":"#eab308";
+    return `<div style="border:1px solid ${pct<=20?"#fecaca":"#fed7aa"};border-radius:14px;padding:14px;background:${pct<=20?"#fff7f7":"#fff9f5"}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="font-weight:700;font-size:14px">${i.displayName}</div>
+        <span style="font-size:11px;font-weight:700;color:${barColor};white-space:nowrap">${pct}%</span>
+      </div>
+      <div style="margin:6px 0;background:#e5e7eb;border-radius:999px;height:6px">
+        <div style="background:${barColor};width:${pct}%;height:6px;border-radius:999px;transition:width .3s"></div>
+      </div>
+      <div class="small muted" style="margin-bottom:8px">${fmtQty(i.currentQuantity)} / ${fmtQty(i.initialQuantity)} ${i.quantityUnit} — ${locationPath(i.locationId)}</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn secondary" style="padding:5px 10px;font-size:12px" onclick="openDetail('${i.id}')">${t("btn_detail")}</button>
+        <button class="btn" style="padding:5px 10px;font-size:12px" onclick="prefillRequestFromInventory('${i.id}')">${t("btn_place_order")}</button>
+      </div>
+    </div>`;
+  }
+
+  $("dashboard").innerHTML=`
+    <div class="grid grid-4">
+      <div class="card"><div class="small muted">${t("dash_total")}</div><div class="metric">${state.inventory.filter(i=>i.status!=="DISPOSED").length}</div></div>
+      <div class="card"><div class="small muted" style="color:var(--red)">${t("dash_low")}</div><div class="metric" style="color:var(--red)">${low.length}</div></div>
+      <div class="card"><div class="small muted">${t("dash_pending")}</div><div class="metric">${state.requests.filter(r=>r.requesterId===ui.currentUserId&&["SUBMITTED","APPROVED","ORDERED","PARTIALLY_RECEIVED"].includes(r.status)).length}</div></div>
+      <div class="card"><div class="small muted">${t("dash_expiring")}</div><div class="metric">${expiring.length}</div></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:14px">${t("dash_4ops")}</h3>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+        <div style="border:1px solid var(--line);border-radius:16px;padding:18px;background:linear-gradient(135deg,#eff6ff 0%,#fff 100%);cursor:pointer" onclick="activateSection('inventory')">
+          <div style="font-size:28px;margin-bottom:8px">🔍</div>
+          <div style="font-weight:800;font-size:16px;margin-bottom:4px">${t("op_find")}</div>
+          <div class="small muted" style="margin-bottom:12px">${t("op_find_desc")}</div>
+          <button class="btn blue" style="width:100%;padding:8px">${t("op_find_btn")}</button>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:16px;padding:18px;background:linear-gradient(135deg,#f0fdf4 0%,#fff 100%);cursor:pointer" onclick="activateSection('inventory')">
+          <div style="font-size:28px;margin-bottom:8px">📋</div>
+          <div style="font-weight:800;font-size:16px;margin-bottom:4px">${t("op_use")}</div>
+          <div class="small muted" style="margin-bottom:12px">${t("op_use_desc")}</div>
+          <button class="btn" style="width:100%;padding:8px;background:#16a34a">${t("op_use_btn")}</button>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:16px;padding:18px;background:linear-gradient(135deg,#fefce8 0%,#fff 100%);cursor:pointer" onclick="openNewRequest()">
+          <div style="font-size:28px;margin-bottom:8px">📦</div>
+          <div style="font-weight:800;font-size:16px;margin-bottom:4px">${t("op_order")}</div>
+          <div class="small muted" style="margin-bottom:12px">${t("op_order_desc")}</div>
+          <button class="btn" style="width:100%;padding:8px;background:#d97706">${t("op_order_btn")}</button>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:16px;padding:18px;background:linear-gradient(135deg,#fdf4ff 0%,#fff 100%);cursor:pointer" onclick="openNewBatch()">
+          <div style="font-size:28px;margin-bottom:8px">🧪</div>
+          <div style="font-weight:800;font-size:16px;margin-bottom:4px">${t("op_make")}</div>
+          <div class="small muted" style="margin-bottom:12px">${t("op_make_desc")}</div>
+          <button class="btn" style="width:100%;padding:8px;background:#7c3aed">${t("op_make_btn")}</button>
+        </div>
+      </div>
+    </div>
+
+    ${low.length>0?`<div class="card" style="border-color:#fecaca">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="color:var(--red);margin:0">⚠ ${t("dash_low_alert")} (${low.length}${ui.lang==="en"?" items":"件"})</h3>
+        <button class="btn secondary" style="padding:5px 12px;font-size:12px" onclick="activateSection('requests')">${t("nav_requests")}</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">
+        ${low.map(lowStockCard).join("")}
+      </div>
+    </div>`:`<div class="card"><div style="color:var(--green);font-weight:700">${t("dash_low_ok")}</div></div>`}
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>${t("dash_expiry_h")}</h3>
+        <div class="list">${expiring.map(i=>`<div class="listItem"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-weight:700">${i.displayName}</span><span class="small muted">${t("expiring_label")}: ${i.expirationDate}</span></div><div class="small muted">${locationPath(i.locationId)}</div></div>`).join("")||`<div class="muted small">${t("msg_no_expiring")}</div>`}
+        </div>
+      </div>
+      <div class="card">
+        <h3>${t("dash_my_req")}</h3>
+        <div class="list">${mine.map(r=>`<div class="listItem"><div style="display:flex;justify-content:space-between;gap:10px"><div><div style="font-weight:700">${r.requestNo}</div><div class="small muted">${r.purpose||"-"}</div></div><span class="badge ${statusClass(r.status)}">${statusLabel(r.status)}</span></div><div style="margin-top:8px"><button class="btn secondary" style="padding:5px 10px;font-size:12px" onclick="openRequestDetail('${r.id}')">${t("btn_detail")}</button></div></div>`).join("")||`<div class="muted small">${t("msg_no_requests")}</div>`}
+        </div>
+      </div>
+    </div>`;
+}
+// 在庫詳細を経由せず直接発注依頼フォームに飛ぶヘルパー
+function prefillRequestFromInventory(invId){
+  const item=inventoryById(invId); if(!item) return;
+  const p=item.productId?productById(item.productId):null;
+  ui.editingDraftId=null;
+  ui.pendingLines=[{
+    id:nextId("line"), productId:p?.id||null, vendorId:p?.vendorId||null,
+    productNameSnapshot:p?.name||item.displayName,
+    manufacturerSnapshot:p?.manufacturer||"", catalogNumberSnapshot:p?.catalogNumber||"",
+    quantityRequested:1, quantityUnit:p?.defaultUnit==="mL"?t("unit_bottle"):(p?.defaultUnit||item.quantityUnit),
+  }];
+  activateSection("request-new");
+}
+function renderInventory(){ const sec=$("inventory"); sec.dataset.q=sec.dataset.q||""; sec.dataset.category=sec.dataset.category||""; sec.dataset.status=sec.dataset.status||""; sec.dataset.location=sec.dataset.location||""; const q=sec.dataset.q.toLowerCase(); const category=sec.dataset.category; const status=sec.dataset.status; const loc=sec.dataset.location; const filtered=state.inventory.filter(i=>{ const p=i.productId?productById(i.productId):null; const hay=[i.displayName,i.barcode,i.lotNumber,p?.name,p?.aliasName,p?.catalogNumber,p?.manufacturer].filter(Boolean).join(" ").toLowerCase(); if(q && !hay.includes(q)) return false; if(category && (p?.category||"")!==category) return false; if(status && i.status!==status) return false; if(loc && i.locationId!==loc) return false; return true; }).sort((a,b)=>(a.expirationDate||"9999").localeCompare(b.expirationDate||"9999")); sec.innerHTML=`<div class="card"><h3>${t("search_title")}</h3><div class="toolbar"><div style="min-width:280px;flex:2"><label>${t("lbl_search")} (${t("lbl_search_hint")})</label><input id="inv-q" value="${sec.dataset.q}" placeholder="DMEM / 11965-092 / Lot" onkeydown="if(event.key==='Enter')applyInventoryFilter()"></div><div><label>${t("lbl_category")}</label><select id="inv-cat"><option value="">${t("lbl_all")}</option><option value="CHEMICAL" ${category==="CHEMICAL"?"selected":""}>${t("cat_CHEMICAL")}</option><option value="BIOLOGICAL" ${category==="BIOLOGICAL"?"selected":""}>${t("cat_BIOLOGICAL")}</option><option value="MEDIA" ${category==="MEDIA"?"selected":""}>${t("cat_MEDIA")}</option><option value="BUFFER" ${category==="BUFFER"?"selected":""}>Buffer</option></select></div><div><label>${t("th_status")}</label><select id="inv-status"><option value="">${t("lbl_all")}</option><option value="AVAILABLE" ${status==="AVAILABLE"?"selected":""}>${t("s_AVAILABLE")}</option><option value="IN_USE" ${status==="IN_USE"?"selected":""}>${t("s_IN_USE")}</option><option value="LOW_STOCK" ${status==="LOW_STOCK"?"selected":""}>${t("s_LOW_STOCK")}</option><option value="EXPIRED" ${status==="EXPIRED"?"selected":""}>${t("s_EXPIRED")}</option></select></div><div><label>${t("th_location")}</label><select id="inv-loc"><option value="">すべて</option>${state.locations.map(l=>`<option value="${l.id}" ${loc===l.id?"selected":""}>${locationPath(l.id)}</option>`).join("")}</select></div><div><button class="btn" onclick="applyInventoryFilter()">${t("btn_search")}</button></div></div></div><div class="card"><div class="kpi"><div><h3>${t("search_results")}</h3><div class="hint">${filtered.length} ${t("result_count")}</div></div></div><div class="tableWrap"><table><thead><tr><th>${t("th_product")}</th><th>${t("th_maker")}</th><th>${t("th_remaining")}</th><th>${t("th_status")}</th><th>${t("th_expiry")}</th><th>${t("th_location")}</th><th>${t("th_ops")}</th></tr></thead><tbody>${filtered.map(i=>{ const p=i.productId?productById(i.productId):null; return `<tr><td><div style="font-weight:700">${i.displayName}</div><div class="small muted">Lot: ${i.lotNumber||"-"} / Barcode: ${i.barcode||"-"}</div></td><td>${p?.manufacturer||"-"}<div class="small muted">${p?.catalogNumber||"-"}</div></td><td>${fmtQty(i.currentQuantity)} ${i.quantityUnit}</td><td><span class="badge ${statusClass(i.status)}">${statusLabel(i.status)}</span></td><td>${i.expirationDate||"-"}</td><td>${locationPath(i.locationId)}</td><td><button class="btn secondary" onclick="openDetail('${i.id}')">${t("btn_detail")}</button></td></tr>`; }).join("") || `<tr><td colspan="7" class="muted">${t("msg_no_inventory")}</td></tr>`}</tbody></table></div></div>`; }
+function applyInventoryFilter(){ const sec=$("inventory"); sec.dataset.q=$("inv-q").value.trim(); sec.dataset.category=$("inv-cat").value; sec.dataset.status=$("inv-status").value; sec.dataset.location=$("inv-loc").value; renderInventory(); }
+function openDetail(id){ ui.currentDetailId=id; activateSection("detail"); }
+function renderDetail(){ const item = ui.currentDetailId ? inventoryById(ui.currentDetailId) : null; if(!item){ $("detail").innerHTML=`<div class="card"><div class="muted">${t("msg_no_req_sel")}</div><div style="margin-top:12px"><button class="btn secondary" onclick="activateSection('inventory')">${t("btn_goto_inv")}</button></div></div>`; return; } const product=item.productId?productById(item.productId):null; const children=state.inventory.filter(i=>i.parentItemId===item.id); const events=state.events.filter(e=>e.inventoryItemId===item.id).slice(0,20);
+  // [FIX BUG-06/MISS-03] DerivedBatch レシピ表示
+  const batch=state.derivedBatches?.find(b=>b.resultItemId===item.id);
+  const batchComps=batch?state.derivedBatchComponents?.filter(c=>c.derivedBatchId===batch.id):[];
+  const recipeHtml=batch?`<div style="margin-top:18px"><h3>${t("sec_recipe_used")}</h3><div class="hint">${t("sec_recipe_comp_title")}</div><div class="tableWrap"><table><thead><tr><th>${t("comp_header")}</th><th>${t("th_qty")}</th><th>${t("th_unit")}</th></tr></thead><tbody>${batchComps.map(c=>`<tr><td>${inventoryById(c.sourceItemId)?.displayName||c.sourceItemId}</td><td>${fmtQty(c.quantityUsed)}</td><td>${c.quantityUnit}</td></tr>`).join("")}</tbody></table></div></div>`:"";
+  $("detail").innerHTML=`<div class="two-col"><div class="card"><div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start"><div><h3>${item.displayName}</h3><div class="hint">${t("sub_detail")}</div></div><span class="badge ${statusClass(item.status)}">${statusLabel(item.status)}</span></div><div class="fieldGrid"><div class="field"><div class="k">${t("fld_product")}</div><div class="v">${product?.name || item.displayName}</div></div><div class="field"><div class="k">${t("fld_maker_cat")}</div><div class="v">${product?.manufacturer || "-"} / ${product?.catalogNumber || "-"}</div></div><div class="field"><div class="k">${t("fld_current")}</div><div class="v">${fmtQty(item.currentQuantity)} ${item.quantityUnit}</div></div><div class="field"><div class="k">${t("fld_initial")}</div><div class="v">${fmtQty(item.initialQuantity)} ${item.quantityUnit}</div></div><div class="field"><div class="k">${t("fld_lot")}</div><div class="v">${item.lotNumber || "-"}</div></div><div class="field"><div class="k">${t("fld_barcode")}</div><div class="v mono">${item.barcode || "-"}</div></div><div class="field"><div class="k">${t("fld_recv_date")}</div><div class="v">${item.receivedDate || "-"}</div></div><div class="field"><div class="k">${t("fld_opened")}</div><div class="v">${item.openedDate || "-"}</div></div><div class="field"><div class="k">${t("fld_expiry")}</div><div class="v">${item.expirationDate || "-"}</div></div><div class="field"><div class="k">${t("fld_location")}</div><div class="v">${locationPath(item.locationId)}</div></div></div><div class="pillnav" style="margin-top:14px"><button onclick="activateSection('aliquots')">${t("btn_aliquot")}</button><button onclick="openNewBatch()">${t("btn_batch_use")}</button><button onclick="prefillRequestFromDetail()">${t("btn_reorder")}</button><button onclick="showLocation(item.locationId)">${t("loc_view")}</button><button onclick="toggleMoveForm()">${t("act_move")}</button></div>${recipeHtml}<div id="move-form" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#f8fafc"><label>${t("lbl_move_dest")}</label><select id="inline-move-loc">${state.locations.map(l=>`<option value="${l.id}" ${l.id===item.locationId?"selected":""}>${locationPath(l.id)}</option>`).join("")}</select><label style="margin-top:8px">${t("move_reason_lbl")}</label><input id="inline-move-reason" value="${t('move_default2')}"><div style="display:flex;gap:8px;margin-top:10px"><button class="btn" onclick="moveCurrentInventory()">${t("btn_move")}</button><button class="btn secondary" onclick="toggleMoveForm()">${t("btn_close")}</button></div><div id="move-msg"></div></div><div style="margin-top:18px"><h3>${t("sec_history")}</h3><div class="timeline">${events.map(e=>`<div class="event"><div><div style="font-weight:700">${eventLabel(e.eventType)}</div><div class="small muted">${e.notes || "-"}</div><div class="small muted">${t("actor_label")}: ${actorName(e.actorUserId)}</div></div><div style="text-align:right"><div>${fmtQty(e.quantityDelta)} ${e.quantityUnit || ""}</div><div class="small muted">${e.eventAt}</div></div></div>`).join("") || `<div class="muted">${t("msg_no_events")}</div>`}</div></div></div><div class="grid"><div class="card"><h3>${t("sec_use_title")}</h3><div class="hint">${t("sec_use_hint")}</div><label>${t("lbl_use_qty")} (${item.quantityUnit})</label><input id="use-qty" placeholder="${ui.lang==='en'?'e.g. 50':'例: 50'}"><label style="margin-top:10px">${t("lbl_use_note")}</label><input id="use-note" placeholder="${ui.lang==='en'?'e.g. Cell culture':'例: 細胞培養'}"><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="btn" onclick="useCurrentInventory()">${t("btn_use")}</button>${ui.currentRole==="ADMIN" ? `<button class="btn secondary" onclick="activateSection('admin-adjustments')">${t("btn_adj_goto")}</button>` : ``}</div><div id="use-msg"></div></div><div class="card"><h3>${t("sec_children")}</h3><div class="list">${children.map(c=>`<div class="listItem"><div style="font-weight:700">${c.displayName}</div><div class="small muted">${fmtQty(c.currentQuantity)} ${c.quantityUnit}</div><div style="margin-top:8px"><button class="btn secondary" onclick="openDetail('${c.id}')">${t("btn_open")}</button></div></div>`).join("") || `<div class="muted">${t("msg_no_children")}</div>`}</div></div></div></div>`; }
+function useCurrentInventory(){ const item=inventoryById(ui.currentDetailId); const qty=Number($("use-qty").value); const note=$("use-note").value.trim(); if(!qty || qty<=0 || !isFinite(qty)){ $("use-msg").innerHTML=`<div class="message info">${t("msg_use_qty")}</div>`; return; } if(qty > item.currentQuantity){ $("use-msg").innerHTML=`<div class="message info">${t("msg_use_over")}</div>`; return; } item.currentQuantity -= qty; if(!item.openedDate) item.openedDate=TODAY; item.status=recalcInventoryStatus(item); eventPush({ inventoryItemId:item.id, eventType:"USE", quantityDelta:-qty, quantityUnit:item.quantityUnit, actorUserId:ui.currentUserId, notes:note || t("use_note_default") }); $("use-msg").innerHTML=`<div class="message success">${t("use_ok")} ${fmtQty(item.currentQuantity)} ${item.quantityUnit}</div>`; renderDashboard(); renderInventory(); setTimeout(renderDetail,50); }
+// [v3] 場所変更 — 全ロールが在庫詳細から直接実行できる
+function toggleMoveForm(){ const f=$("move-form"); if(f) f.style.display = f.style.display==="none" ? "block" : "none"; }
+function moveCurrentInventory(){
+  const item=inventoryById(ui.currentDetailId);
+  const newLocId=$("inline-move-loc").value;
+  const reason=$("inline-move-reason").value.trim()||t("move_default");
+  if(!newLocId){ $("move-msg").innerHTML=`<div class="message info">${t("msg_move_sel")}</div>`; return; }
+  const from=item.locationId; item.locationId=newLocId;
+  eventPush({inventoryItemId:item.id, eventType:"MOVE", quantityDelta:0, quantityUnit:item.quantityUnit, actorUserId:ui.currentUserId, notes:`${locationPath(from)} → ${locationPath(newLocId)} / ${reason}`});
+  $("move-msg").innerHTML=`<div class="message success">${t("msg_move_done")} → ${locationPath(newLocId)}</div>`;
+  renderInventory(); renderLocations(); setTimeout(renderDetail,50);
+}
+// ═══════════════════════════════════════════════════════
+// [v4] レシピ管理
+// ═══════════════════════════════════════════════════════
+function renderRecipes(){
+  const editId = $("recipes").dataset.editId || "";
+  const editR = editId ? state.recipes.find(r=>r.id===editId) : null;
+  const editComps = editR ? editR.components : (editId==="new" ? [] : null);
+
+  // 新規作成モード
+  if(editId==="new" || editR){
+    const comps = editComps || [];
+    $("recipes").innerHTML = `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3>${editR ? `${t("loc_selected")} ${editR.name}` : t("recipe_new")}</h3>
+          <button class="btn secondary" onclick="cancelEditRecipe()">${t("btn_recipe_back")}</button>
+        </div>
+        <div class="grid grid-2">
+          <div><label>${t("lbl_recipe_name")}</label><input id="rec-name" value="${editR?.name||""}"></div>
+          <div><label>${t("lbl_batch_type")}</label><select id="rec-type">
+            ${["PREPARED_MEDIA","PREPARED_BUFFER","MIX","SAMPLE"].map(bt=>`<option value="${bt}" ${(editR?.batchType||"PREPARED_MEDIA")===bt?"selected":""}>${{PREPARED_MEDIA:t("btype_PREPARED_MEDIA"),PREPARED_BUFFER:t("btype_PREPARED_BUFFER"),MIX:t("btype_MIX"),SAMPLE:t("btype_SAMPLE")}[bt]}</option>`).join("")}
+          </select></div>
+          <div style="grid-column:1/-1"><label>${t("lbl_recipe_desc")}</label><textarea id="rec-desc" style="min-height:60px">${editR?.description||""}</textarea></div>
+        </div>
+
+        <div style="margin-top:16px">
+          <h4>${t("recipe_comp")}</h4>
+          <div class="hint">${t("recipe_comp_hint")}</div>
+          <div class="tableWrap"><table>
+            <thead><tr><th>${t("th_product")}</th><th>${t("th_qty")}</th><th>${t("th_unit")}</th><th>${t("th_note")}</th><th></th></tr></thead>
+            <tbody id="rec-comp-rows">${comps.map((c,i)=>`<tr>
+              <td><select onchange="updateRecipeComp(${i},'productId',this.value)">
+                ${state.products.map(p=>`<option value="${p.id}" ${c.productId===p.id?"selected":""}>${p.name}</option>`).join("")}
+              </select></td>
+              <td><input value="${c.quantity}" style="width:80px" onchange="updateRecipeComp(${i},'quantity',+this.value)"></td>
+              <td><input value="${c.unit}" style="width:60px" onchange="updateRecipeComp(${i},'unit',this.value)"></td>
+              <td><input value="${c.note||""}" placeholder="${ui.lang==='en'?'Optional':'任意'}" onchange="updateRecipeComp(${i},'note',this.value)"></td>
+              <td><button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="removeRecipeComp(${i})">${t("btn_delete")}</button></td>
+            </tr>`).join("")}</tbody>
+          </table></div>
+          <div style="margin-top:8px"><button class="btn secondary" onclick="addRecipeComp()">${t("btn_add_comp")}</button></div>
+        </div>
+
+        <div style="margin-top:16px">
+          <h4>${t("recipe_protocol")}</h4>
+          <div class="hint">${t("recipe_protocol_hint")}</div>
+          ${editR?.protocolFileName ? `<div style="padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:13px;margin-bottom:8px">📄 ${editR.protocolFileName} <button class="btn secondary" style="padding:3px 8px;font-size:11px;margin-left:8px" onclick="removeProtocolFile('${editR.id}')">${t("btn_delete")}</button></div>` : ""}
+          <input type="file" id="rec-protocol" accept=".pdf,.doc,.docx" style="font-size:13px" onchange="previewProtocolFile(this)">
+          <div id="rec-file-preview"></div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+          <button class="btn" onclick="${editR?`saveRecipe('${editR.id}')`:"createRecipe()"}">${editR?t("btn_save"):t("btn_save")}</button>
+          <button class="btn secondary" onclick="cancelEditRecipe()">${t("btn_cancel")}</button>
+        </div>
+        <div id="rec-msg"></div>
+      </div>`;
+    // ロールバック用に編集中成分を ui に保持
+    if(!ui.editingRecipeComps) ui.editingRecipeComps = comps.map(c=>({...c}));
+    return;
+  }
+
+  // 一覧表示
+  $("recipes").innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div></div>
+      <button class="btn" onclick="startNewRecipe()">${t("btn_new_recipe")}</button>
+    </div>
+    <div class="grid grid-2">${state.recipes.map(r=>{
+      const compsHtml = r.components.map(c=>{
+        const p=productById(c.productId);
+        return `<div class="small muted">・${p?.name||c.productId}: ${c.quantity} ${c.unit}${c.note?` (${c.note})`:""}</div>`;
+      }).join("");
+      return `<div class="card">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+          <div>
+            <div style="font-weight:700;font-size:16px">${r.name}</div>
+            <div class="small muted" style="margin-top:2px">${r.description||""}</div>
+          </div>
+          <span class="badge b-available">${{PREPARED_MEDIA:"調製培地",PREPARED_BUFFER:"Buffer",MIX:"混合液",SAMPLE:"サンプル"}[r.batchType]||r.batchType}</span>
+        </div>
+        <div style="margin-top:10px;padding:10px;background:#f8fafc;border-radius:10px">${compsHtml}</div>
+        ${r.protocolFileName?`<div style="margin-top:8px;font-size:12px;color:var(--muted)">📄 ${r.protocolFileName}</div>`:""}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn" onclick="applyRecipeToBatch('${r.id}')">${t("btn_apply_recipe")}</button>
+          <button class="btn secondary" onclick="startEditRecipe('${r.id}')">${t("btn_edit")}</button>
+          <button class="btn danger" style="padding:6px 10px;font-size:12px" onclick="archiveRecipe('${r.id}')">${t("btn_delete")}</button>
+        </div>
+      </div>`;
+    }).join("")||`<div class="card muted">${t("recipe_empty")}</div>`}
+    </div>`;
+}
+
+function startNewRecipe(){ ui.editingRecipeComps=[]; $("recipes").dataset.editId="new"; renderRecipes(); }
+function startEditRecipe(id){ const r=state.recipes.find(q=>q.id===id); ui.editingRecipeComps=r.components.map(c=>({...c})); $("recipes").dataset.editId=id; renderRecipes(); }
+function cancelEditRecipe(){ ui.editingRecipeComps=null; $("recipes").dataset.editId=""; renderRecipes(); }
+function archiveRecipe(id){ if(!confirm(ui.lang==="en"?"Delete this recipe?":"このレシピを削除しますか？")) return; state.recipes=state.recipes.filter(r=>r.id!==id); renderRecipes(); }
+function removeProtocolFile(id){ const r=state.recipes.find(q=>q.id===id); r.protocolFileName=null; renderRecipes(); }
+
+function updateRecipeComp(idx,field,value){
+  if(!ui.editingRecipeComps) return;
+  ui.editingRecipeComps[idx][field]=value;
+}
+function addRecipeComp(){
+  if(!ui.editingRecipeComps) ui.editingRecipeComps=[];
+  const firstProd=state.products[0];
+  ui.editingRecipeComps.push({ productId:firstProd?.id||"", quantity:0, unit:"mL", note:"" });
+  const tbody=$("rec-comp-rows"); if(!tbody) return;
+  tbody.innerHTML = ui.editingRecipeComps.map((c,i)=>`<tr>
+    <td><select onchange="updateRecipeComp(${i},'productId',this.value)">
+      ${state.products.map(p=>`<option value="${p.id}" ${c.productId===p.id?"selected":""}>${p.name}</option>`).join("")}
+    </select></td>
+    <td><input value="${c.quantity}" style="width:80px" onchange="updateRecipeComp(${i},'quantity',+this.value)"></td>
+    <td><input value="${c.unit}" style="width:60px" onchange="updateRecipeComp(${i},'unit',this.value)"></td>
+    <td><input value="${c.note||""}" placeholder="${ui.lang==='en'?'Optional':'任意'}" onchange="updateRecipeComp(${i},'note',this.value)"></td>
+    <td><button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="removeRecipeComp(${i})">${t("btn_delete")}</button></td>
+  </tr>`).join("");
+}
+function removeRecipeComp(idx){ if(!ui.editingRecipeComps) return; ui.editingRecipeComps.splice(idx,1); const tbody=$("rec-comp-rows"); if(tbody) tbody.innerHTML=ui.editingRecipeComps.map((c,i)=>`<tr><td><select onchange="updateRecipeComp(${i},'productId',this.value)">${state.products.map(p=>`<option value="${p.id}" ${c.productId===p.id?"selected":""}>${p.name}</option>`).join("")}</select></td><td><input value="${c.quantity}" style="width:80px" onchange="updateRecipeComp(${i},'quantity',+this.value)"></td><td><input value="${c.unit}" style="width:60px" onchange="updateRecipeComp(${i},'unit',this.value)"></td><td><input value="${c.note||""}" placeholder="${ui.lang==='en'?'Optional':'任意'}" onchange="updateRecipeComp(${i},'note',this.value)"></td><td><button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="removeRecipeComp(${i})">${t("btn_delete")}</button></td></tr>`).join(""); }
+
+function previewProtocolFile(input){
+  const f=input.files[0]; if(!f) return;
+  $("rec-file-preview").innerHTML=`<div style="font-size:12px;color:var(--muted);margin-top:4px">${t("loc_selected")} ${f.name}</div>`;
+}
+
+function buildRecipeFromForm(){
+  const name=$("rec-name")?.value.trim(); if(!name) return null;
+  const proto=$("rec-protocol")?.files[0];
+  return {
+    name,
+    batchType:$("rec-type")?.value||"PREPARED_MEDIA",
+    description:$("rec-desc")?.value.trim()||"",
+    components:(ui.editingRecipeComps||[]).filter(c=>c.productId&&c.quantity>0).map(c=>({...c})),
+    protocolFileName: proto ? proto.name : undefined,
+  };
+}
+function createRecipe(){
+  const d=buildRecipeFromForm(); if(!d){ $("rec-msg").innerHTML=`<div class="message info">${t("msg_recipe_name")}</div>`; return; }
+  if(!d.components.length){ $("rec-msg").innerHTML=`<div class="message info">${t("msg_batch_no_comp")}</div>`; return; }
+  state.recipes.unshift({ id:nextId("rec"), ...d, protocolFileName:d.protocolFileName||null, createdById:ui.currentUserId, createdAt:TODAY, isActive:true });
+  ui.editingRecipeComps=null; $("recipes").dataset.editId=""; renderRecipes();
+}
+function saveRecipe(id){
+  const d=buildRecipeFromForm(); if(!d){ $("rec-msg").innerHTML=`<div class="message info">${t("msg_recipe_name")}</div>`; return; }
+  const r=state.recipes.find(q=>q.id===id);
+  r.name=d.name; r.batchType=d.batchType; r.description=d.description; r.components=d.components;
+  if(d.protocolFileName) r.protocolFileName=d.protocolFileName;
+  ui.editingRecipeComps=null; $("recipes").dataset.editId=""; renderRecipes();
+}
+// レシピを選んで混合物作成画面に成分を展開
+function applyRecipeToBatch(recipeId){
+  const r=state.recipes.find(q=>q.id===recipeId); if(!r) return;
+  ui.pendingBatchComps = r.components.map(c=>({
+    id:nextId("bc"),
+    itemId: state.inventory.find(i=>i.productId===c.productId&&i.currentQuantity>0)?.id || state.inventory[0]?.id,
+    qty:c.quantity, unit:c.unit
+  }));
+  activateSection("batches");
+}
+// [FIX BUG-05/MISS-02] フォームを複数明細対応に完全書き換え
+// [FIX BUG-16] 優先度フィールドを追加
+// [FIX BUG-04/MISS-01/08] DRAFT昇格・編集フロー対応
+
+function openNewRequest(){
+  ui.editingDraftId = null;
+  ui.pendingLines = [];
+  activateSection("request-new");
+}
+
+function editDraft(reqId){
+  const req = requestById(reqId);
+  if(!req || req.status !== "DRAFT") return;
+  if(req.requesterId !== ui.currentUserId){ alert(t("msg_other_draft")); return; }
+  ui.editingDraftId = reqId;
+  ui.pendingLines = req.lines.map(l=>({...l}));
+  activateSection("request-new");
+}
+
+function submitDraft(reqId){
+  const req = requestById(reqId);
+  if(!req || req.status !== "DRAFT") return;
+  if(req.requesterId !== ui.currentUserId){ alert(t("msg_other_submit")); return; }
+  req.status = "SUBMITTED"; req.submittedAt = TODAY;
+  ui.currentRequestId = reqId;
+  renderRequests(); renderApprovals(); renderRequestDetail(); renderDashboard();
+}
+
+function prefillRequestFromDetail(){
+  const item = inventoryById(ui.currentDetailId);
+  const p = item.productId ? productById(item.productId) : null;
+  ui.editingDraftId = null;
+  ui.pendingLines = [{
+    id: nextId("line"),
+    productId: p?.id || null,
+    vendorId: p?.vendorId || null,
+    productNameSnapshot: p?.name || item.displayName,
+    manufacturerSnapshot: p?.manufacturer || "",
+    catalogNumberSnapshot: p?.catalogNumber || "",
+    quantityRequested: 1,
+    quantityUnit: p?.defaultUnit === "mL" ? t("unit_bottle") : (p?.defaultUnit || item.quantityUnit),
+  }];
+  activateSection("request-new");
+}
+
+function renderRequestNew(){
+  const isDraftEdit = !!ui.editingDraftId;
+  const draft = isDraftEdit ? requestById(ui.editingDraftId) : null;
+  $("request-new").innerHTML = `
+    <div class="card">
+      <h3>${isDraftEdit ? ui.lang==="en"?"Edit Request Draft":"発注依頼編集（下書き）" : ui.lang==="en"?"New Purchase Request":"発注依頼作成"}</h3>
+      <div class="hint">${t("sub_request_new")}</div>
+      <div class="grid grid-2">
+        <div>
+          <label>${t("lbl_requester")}</label>
+          <select id="req-requester">
+            ${state.users.map(u=>`<option value="${u.id}" ${(draft?.requesterId||ui.currentUserId)===u.id?"selected":""}>${u.name}（${u.role}）</option>`).join("")}
+          </select>
+        </div>
+        <div><label>${t("lbl_purpose")}</label><input id="req-purpose" value="${draft?.purpose || "細胞培養用"}"></div>
+        <div><label>${t("lbl_priority")}</label>
+          <select id="req-priority">
+            <option value="NORMAL" ${(!draft || draft.priority==="NORMAL")?"selected":""}>${t("pri_NORMAL")}</option>
+            <option value="HIGH"   ${draft?.priority==="HIGH"  ?"selected":""}>${t("pri_HIGH")}</option>
+            <option value="URGENT" ${draft?.priority==="URGENT"?"selected":""}>${t("pri_URGENT")}</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <h4>${ui.lang==="en"?"Added Lines":"追加済み明細"}</h4>
+        <div id="pending-lines-table"></div>
+      </div>
+      <div style="margin-top:12px;border:1px dashed var(--line);border-radius:14px;padding:14px;background:#fafafa">
+        <h4 style="margin:0 0 10px">${t("btn_add_line")}</h4>
+        <div class="grid grid-2">
+          <div><label>${t("lbl_prod_name")}</label>
+            <input id="add-name" placeholder="${ui.lang==='en'?'e.g. DMEM':'例: DMEM'}" list="product-list" oninput="autofillProductFields()">
+            <datalist id="product-list">${state.products.map(p=>`<option value="${p.name}">`).join("")}</datalist>
+          </div>
+          <div><label>${t("lbl_maker")}</label><input id="add-manufacturer" placeholder="${ui.lang==='en'?'e.g. Gibco':'例: Gibco'}"></div>
+          <div><label>${t("lbl_catalog")}</label><input id="add-catalog" placeholder="${ui.lang==='en'?'e.g. 11965-092':'例: 11965-092'}"></div>
+          <div><label>${t("lbl_vendor")}</label><select id="add-vendor">${state.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join("")}</select></div>
+          <div><label>${t("lbl_qty")} *</label><input id="add-qty" value="1" type="number" min="0.001" step="any"></div>
+          <div><label>${t("lbl_unit")}</label><input id="add-unit" value="${t('unit_bottle')}"></div>
+        </div>
+        <div style="margin-top:10px"><button class="btn secondary" onclick="addPendingLine()">${t("btn_add_line")}</button></div>
+        <div id="add-line-msg"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+        <button class="btn secondary" onclick="saveDraftRequest()">${isDraftEdit ? t("btn_update_draft") : t("btn_save_draft")}</button>
+        <button class="btn"           onclick="submitRequest()">${isDraftEdit ? t("btn_submit_draft") : t("btn_submit")}</button>
+      </div>
+      <div id="req-msg"></div>
+    </div>`;
+  renderPendingLines();
+}
+
+function renderPendingLines(){
+  const tbl = $("pending-lines-table"); if(!tbl) return;
+  if(!ui.pendingLines.length){
+    tbl.innerHTML = `<div style="padding:12px;border:1px dashed var(--line);border-radius:12px;text-align:center;font-size:13px;color:var(--muted)">${ui.lang==="en"?"No lines yet. Add below.":"まだ明細がありません。下のフォームから追加してください。"}</div>`;
+    return;
+  }
+  tbl.innerHTML = `<div class="tableWrap"><table>
+    <thead><tr><th>${t("th_product")}</th><th>${t("th_maker")}</th><th>${t("th_catalog")}</th><th>${t("th_vendor")}</th><th>${t("th_qty")}</th><th>${t("th_unit")}</th><th></th></tr></thead>
+    <tbody>${ui.pendingLines.map((l,idx)=>`<tr>
+      <td>${l.productNameSnapshot}</td>
+      <td>${l.manufacturerSnapshot||"-"}</td>
+      <td>${l.catalogNumberSnapshot||"-"}</td>
+      <td>${vendorById(l.vendorId)?.name||"-"}</td>
+      <td>${fmtQty(l.quantityRequested)}</td>
+      <td>${l.quantityUnit}</td>
+      <td><button class="btn danger" style="padding:5px 10px;font-size:12px" onclick="removePendingLine(${idx})">${t("btn_delete")}</button></td>
+    </tr>`).join("")}
+    </tbody></table></div>`;
+}
+
+function addPendingLine(){
+  const name = $("add-name").value.trim();
+  const qty  = Number($("add-qty").value || 0);
+  if(!name || qty <= 0){ $("add-line-msg").innerHTML=`<div class="message info">${t("msg_enter_qty")}</div>`; return; }
+  const p = state.products.find(p => p.name===name || p.aliasName===name);
+  ui.pendingLines.push({
+    id: nextId("line"),
+    productId: p?.id || null,
+    vendorId: $("add-vendor").value || null,
+    productNameSnapshot: name,
+    manufacturerSnapshot: $("add-manufacturer").value.trim(),
+    catalogNumberSnapshot: $("add-catalog").value.trim(),
+    quantityRequested: qty,
+    quantityUnit: $("add-unit").value.trim() || t("unit_bottle"),
+  });
+  $("add-name").value=""; $("add-manufacturer").value=""; $("add-catalog").value=""; $("add-qty").value="1";
+  $("add-line-msg").innerHTML="";
+  renderPendingLines();
+}
+// 製品マスタ登録済みの製品を選んだとき、メーカー・カタログ番号・単位を自動補完
+function autofillProductFields(){
+  const name = $("add-name")?.value.trim();
+  const p = state.products.find(p=>p.name===name||p.aliasName===name);
+  if(!p) return;
+  if($("add-manufacturer")) $("add-manufacturer").value = p.manufacturer||"";
+  if($("add-catalog"))      $("add-catalog").value      = p.catalogNumber||"";
+  if($("add-unit"))         $("add-unit").value          = p.defaultUnit==="mL"?t("unit_bottle"):(p.defaultUnit||t("unit_bottle"));
+  const vSel = $("add-vendor");
+  if(vSel && p.vendorId) vSel.value = p.vendorId;
+}
+function removePendingLine(idx){ ui.pendingLines.splice(idx, 1); renderPendingLines(); }
+
+function buildRequestFromForm(status){
+  const existing = ui.editingDraftId ? requestById(ui.editingDraftId) : null;
+  const requesterId = $("req-requester")?.value || ui.currentUserId;
+  const requester = userById(requesterId);
+  return {
+    id: ui.editingDraftId || nextId("req"),
+    requestNo: existing?.requestNo || nextRequestNo(),
+    requesterId,
+    requesterCodeSnapshot: requester?.memberCode || currentUser().memberCode,
+    status,
+    priority: $("req-priority")?.value || "NORMAL",
+    purpose: $("req-purpose")?.value?.trim() || "",
+    submittedAt: status==="SUBMITTED" ? TODAY : null,
+    approvedAt:null, approverId:null, approvalComment:null, orderedAt:null,
+    lines: ui.pendingLines.map(l=>({...l})),
+  };
+}
+
+function saveDraftRequest(){
+  if(!ui.pendingLines.length){ $("req-msg").innerHTML=`<div class="message info">${t("msg_add_line")}</div>`; return; }
+  const req = buildRequestFromForm("DRAFT");
+  if(ui.editingDraftId){
+    const idx = state.requests.findIndex(r=>r.id===ui.editingDraftId);
+    if(idx>=0) state.requests[idx] = req;
+  } else {
+    state.requests.unshift(req);
+  }
+  ui.editingDraftId = null; ui.pendingLines = [];
+  $("req-msg").innerHTML=`<div class="message success">${t("msg_draft_saved")} ${req.requestNo}</div>`;
+  renderRequests();
+}
+
+function submitRequest(){
+  if(!ui.pendingLines.length){ $("req-msg").innerHTML=`<div class="message info">${t("msg_add_line")}</div>`; return; }
+  const req = buildRequestFromForm("SUBMITTED");
+  if(ui.editingDraftId){
+    const idx = state.requests.findIndex(r=>r.id===ui.editingDraftId);
+    if(idx>=0) state.requests[idx] = req;
+  } else {
+    state.requests.unshift(req);
+  }
+  ui.editingDraftId = null; ui.pendingLines = [];
+  $("req-msg").innerHTML=`<div class="message success">${t("msg_submitted")} ${req.requestNo}</div>`;
+  renderDashboard(); renderRequests(); renderApprovals();
+}
+
+function openRequestDetail(id){
+  ui.currentRequestId = id;
+  // 承認画面へ遷移するのは教授・秘書のみ。管理者は依頼詳細で閲覧
+  const target = (ui.currentRole==="PROFESSOR"||ui.currentRole==="SECRETARY") ? "approval-detail" : "request-detail";
+  activateSection(target);
+}
+
+// [FIX BUG-10] PROFESSOR/SECRETARY も自分の依頼一覧を見られる（+ 新規依頼作成ボタン追加）
+function renderRequests(){
+  // 学生は自分の依頼のみ。教授・秘書・管理者は全件
+  const isApprover = ["PROFESSOR","SECRETARY","ADMIN"].includes(ui.currentRole);
+  const rawList = isApprover
+    ? state.requests
+    : state.requests.filter(r=>r.requesterId===ui.currentUserId);
+  // 緊急性の高い順・同順なら申請日の新しい順
+  const list = [...rawList].sort((a,b)=>{
+    const pd = priorityOrder(a.priority) - priorityOrder(b.priority);
+    if(pd!==0) return pd;
+    return (b.submittedAt||"").localeCompare(a.submittedAt||"");
+  });
+
+  // 発注状況ボード用データ (SUBMITTED/APPROVED/ORDERED/PARTIALLY_RECEIVED)
+  const ACTIVE = ["SUBMITTED","APPROVED","ORDERED","PARTIALLY_RECEIVED"];
+  const boardReqs = [...state.requests.filter(r=>ACTIVE.includes(r.status))]
+    .sort((a,b)=>{
+      const order={ORDERED:0,PARTIALLY_RECEIVED:1,APPROVED:2,SUBMITTED:3};
+      const sd=(order[a.status]??9)-(order[b.status]??9);
+      if(sd!==0) return sd;
+      return priorityOrder(a.priority)-priorityOrder(b.priority);
+    });
+
+  const currentTab = $("requests").dataset.tab || "list";
+  const statusColor = {
+    SUBMITTED:"#eef2ff|#3730a3",
+    APPROVED:"#fef3c7|#a16207",
+    ORDERED:"#dcfce7|#166534",
+    PARTIALLY_RECEIVED:"#dbeafe|#1d4ed8",
+  };
+  const statusLabel_ob = {
+    SUBMITTED: t("ob_submitted"),
+    APPROVED:  t("ob_approved"),
+    ORDERED:   t("ob_ordered"),
+    PARTIALLY_RECEIVED: t("ob_partial"),
+  };
+
+  // 発注状況ボードの行を生成
+  const boardRows = [];
+  boardReqs.forEach(req=>{
+    req.lines.forEach(line=>{
+      const rcv=receivedQtyForLine(line.id);
+      const total=Number(line.quantityRequested)||0;
+      const pct=total>0?Math.round(rcv/total*100):0;
+      const [bg,col]=(statusColor[req.status]||"#f1f5f9|#475569").split("|");
+      boardRows.push({req,line,rcv,total,pct,bg,col});
+    });
+  });
+
+  $("requests").innerHTML=`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div style="display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden">
+            <button
+              style="padding:7px 16px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:background .15s;background:${currentTab==="list"?"var(--blue)":"#fff"};color:${currentTab==="list"?"#fff":"var(--text)"}"
+              onclick="$('requests').dataset.tab='list';renderRequests()">
+              ${t("req_my_title")}
+            </button>
+            <button
+              style="padding:7px 16px;font-size:13px;font-weight:700;border:none;border-left:1px solid var(--line);cursor:pointer;transition:background .15s;background:${currentTab==="board"?"var(--blue)":"#fff"};color:${currentTab==="board"?"#fff":"var(--text)"}"
+              onclick="$('requests').dataset.tab='board';renderRequests()">
+              ${t("order_board")}
+            </button>
+          </div>
+        </div>
+        <button class="btn secondary" style="white-space:nowrap" onclick="openNewRequest()">${t("btn_new_req")}</button>
+      </div>
+
+      ${currentTab==="list" ? `
+        <div class="hint" style="margin-bottom:12px">${t("sub_requests")}</div>
+        <div class="list">${list.map(r=>`
+          <div class="listItem">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+              <div>
+                <div style="font-weight:800">${r.requestNo}</div>
+                <div class="small muted">${t("req_list_requester")}: ${userById(r.requesterId)?.name||"-"} / ${t("req_list_purpose")}: ${r.purpose||"-"} / ${t("req_list_priority")}: ${{NORMAL:t("pri_NORMAL"),HIGH:t("pri_HIGH"),URGENT:t("pri_URGENT")}[r.priority]||r.priority||"-"}</div>
+                <div class="small muted">${t("fld_submitted")}: ${r.submittedAt||t("draft_label")}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                <span class="badge ${statusClass(r.status)}">${statusLabel(r.status)}</span>
+                <span class="badge b-priority-${r.priority?.toLowerCase()}" style="font-size:11px;padding:3px 8px">${priorityBadge(r.priority)}</span>
+              </div>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn secondary" onclick="openRequestDetail('${r.id}')">${t("btn_detail")}</button>
+              ${r.status==="DRAFT"&&r.requesterId===ui.currentUserId?`<button class="btn" onclick="editDraft('${r.id}')">${t("btn_edit")}</button><button class="btn secondary" onclick="submitDraft('${r.id}')">${t("btn_submit")}</button>`:""}
+            </div>
+          </div>`).join("") || `<div class="muted">${t("msg_no_requests")}</div>`}
+        </div>
+      ` : `
+        <div class="hint" style="margin-bottom:12px">${t("order_board_sub")}</div>
+        ${boardRows.length===0 ? `<div class="muted">${t("order_board_empty")}</div>` : `
+        <div class="tableWrap">
+          <table>
+            <thead><tr>
+              <th style="min-width:110px">${t("th_status")}</th>
+              <th>${t("lbl_priority_badge")}</th>
+              <th>${t("th_req_no")}</th>
+              <th>${t("approval_requester")}</th>
+              <th>${t("th_product")}</th>
+              <th style="min-width:80px;text-align:right">${t("ob_qty_req")}</th>
+              <th style="min-width:80px;text-align:right">${t("ob_qty_rcv")}</th>
+              <th style="min-width:120px">${t("ob_progress")}</th>
+              <th>${t("fld_submitted")}</th>
+              <th>${t("fld_approved")}</th>
+              <th>${t("fld_ordered")}</th>
+              <th></th>
+            </tr></thead>
+            <tbody>${boardRows.map(({req,line,rcv,total,pct,bg,col})=>`
+              <tr style="border-left:4px solid ${col};background:${bg}18">
+                <td>
+                  <span style="display:inline-block;padding:4px 8px;border-radius:8px;font-size:12px;font-weight:800;background:${bg};color:${col}">
+                    ${statusLabel_ob[req.status]||statusLabel(req.status)}
+                  </span>
+                </td>
+                <td><span class="badge b-priority-${req.priority?.toLowerCase()}" style="font-size:11px;padding:3px 8px">${priorityBadge(req.priority)}</span></td>
+                <td style="font-weight:700;font-size:13px">${req.requestNo}</td>
+                <td class="small">${userById(req.requesterId)?.name||"-"}</td>
+                <td>
+                  <div style="font-weight:700">${line.productNameSnapshot}</div>
+                  <div class="small muted">${line.manufacturerSnapshot||""} ${line.catalogNumberSnapshot||""}</div>
+                </td>
+                <td style="text-align:right;font-weight:700">${fmtQty(total)} ${line.quantityUnit}</td>
+                <td style="text-align:right;color:${rcv>0?"var(--green)":"var(--muted)"}">${rcv>0?fmtQty(rcv)+" "+line.quantityUnit:"-"}</td>
+                <td>
+                  <div style="background:#e5e7eb;border-radius:999px;height:8px;margin-bottom:2px">
+                    <div style="background:${pct>=100?"#16a34a":pct>0?"#2563eb":"#e5e7eb"};width:${pct}%;height:8px;border-radius:999px"></div>
+                  </div>
+                  <div class="small muted" style="text-align:right">${pct}%</div>
+                </td>
+                <td class="small muted">${req.submittedAt||"-"}</td>
+                <td class="small muted">${req.approvedAt||"-"}</td>
+                <td class="small muted">${req.orderedAt||"-"}</td>
+                <td><button class="btn secondary" style="padding:4px 8px;font-size:12px;white-space:nowrap" onclick="openRequestDetail('${req.id}')">${t("btn_detail")}</button></td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`}
+      `}
+    </div>`;
+}
+function renderRequestDetail(){
+  const req = ui.currentRequestId ? requestById(ui.currentRequestId) : null;
+  if(!req){ $("request-detail").innerHTML=`<div class="card"><div class="muted">${t("msg_no_req_sel")}</div><div style="margin-top:12px"><button class="btn secondary" onclick="activateSection('requests')">${t("btn_goto_req")}</button></div></div>`; return; }
+  const receipts=requestReceipts(req.id);
+  $("request-detail").innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div><h3>${req.requestNo}</h3><div class="hint">依頼詳細と進捗確認</div></div><span class="badge ${statusClass(req.status)}">${statusLabel(req.status)}</span></div><div class="fieldGrid"><div class="field"><div class="k">${t("approval_requester")}</div><div class="v">${userById(req.requesterId)?.name || "-"}</div></div><div class="field"><div class="k">${t("approval_purpose")}</div><div class="v">${req.purpose || "-"}</div></div><div class="field"><div class="k">${t("th_status")}</div><div class="v">${statusLabel(req.status)}</div></div><div class="field"><div class="k">${t("lbl_priority_badge")}</div><div class="v">${priorityBadge(req.priority)}</div></div><div class="field"><div class="k">${t("fld_submitted")}</div><div class="v">${req.submittedAt || "-"}</div></div><div class="field"><div class="k">${t("fld_approved")}</div><div class="v">${req.approvedAt || "-"}</div></div><div class="field"><div class="k">${t("fld_ordered")}</div><div class="v">${req.orderedAt || "-"}</div></div><div class="field"><div class="k">${ui.lang==="en"?"Approval Comment":"承認コメント"}</div><div class="v">${req.approvalComment || "-"}</div></div></div><div style="margin-top:18px" class="tableWrap"><table><thead><tr><th>${t("th_product")}</th><th>${t("th_maker")}</th><th>${t("th_catalog")}</th><th>${t("th_req_qty")}</th><th>${t("th_rcv_qty")}</th></tr></thead><tbody>${req.lines.map(l=>`<tr><td>${l.productNameSnapshot}</td><td>${l.manufacturerSnapshot || "-"}</td><td>${l.catalogNumberSnapshot || "-"}</td><td>${fmtQty(l.quantityRequested)} ${l.quantityUnit}</td><td>${fmtQty(receivedQtyForLine(l.id))} ${l.quantityUnit}</td></tr>`).join("")}</tbody></table></div>${req.status==="DRAFT"?`<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn secondary" onclick="editDraft('${req.id}')">編集する</button><button class="btn" onclick="submitDraft('${req.id}')">${t("btn_submit")}</button></div>`:""}<div style="margin-top:18px"><h3>${t("sec_receipt_history")}</h3><div class="list">${receipts.map(r=>`<div class="listItem"><div style="font-weight:700">${r.receivedDate}</div><div class="small muted">数量: ${fmtQty(r.quantityReceived)} ${r.quantityUnit} / Lot: ${r.lotNumber || "-"}</div><div class="small muted">保管先: ${locationPath(r.locationId)}</div></div>`).join("") || `<div class="muted">${t("msg_no_history")}</div>`}</div></div></div>`;
+}
+function renderApprovals(){
+  // 緊急性の高い順にソート
+  const pending = [...state.requests.filter(r=>r.status==="SUBMITTED")]
+    .sort((a,b)=>priorityOrder(a.priority)-priorityOrder(b.priority));
+  $("approvals").innerHTML=`<div class="card">
+    <h3>${t("sec_approvals")}</h3>
+    <div class="hint">${t("sub_approvals")}</div>
+    <div class="list">${pending.map(r=>`<div class="listItem">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+        <div>
+          <div style="font-weight:800">${r.requestNo}</div>
+          <div class="small muted">${t("approval_requester")}: ${userById(r.requesterId)?.name||"-"} (${r.requesterCodeSnapshot||"-"})</div>
+          <div class="small muted">${t("approval_purpose")}: ${r.purpose||"-"}</div>
+          <div class="small muted">${t("fld_submitted")}: ${r.submittedAt||"-"}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="badge ${statusClass(r.status)}">${statusLabel(r.status)}</span>
+          <span class="badge b-priority-${r.priority?.toLowerCase()}" style="font-size:11px;padding:3px 8px">${priorityBadge(r.priority)}</span>
+        </div>
+      </div>
+      <div style="margin-top:10px" class="tableWrap"><table><thead><tr><th>${t("th_product")}</th><th>${t("th_qty")}</th><th>${t("th_vendor")}</th></tr></thead>
+      <tbody>${r.lines.map(l=>`<tr><td>${l.productNameSnapshot}</td><td>${fmtQty(l.quantityRequested)} ${l.quantityUnit}</td><td>${vendorById(l.vendorId)?.name||"-"}</td></tr>`).join("")}</tbody></table></div>
+      <div style="margin-top:10px"><button class="btn secondary" onclick="ui.currentRequestId='${r.id}';activateSection('approval-detail')">${t("btn_detail")}</button></div>
+    </div>`).join("") || `<div class="muted">${t("msg_no_approvals")}</div>`}
+    </div></div>`;
+}
+// [FIX BUG-11] ui.currentRequestId が null のとき任意の SUBMITTED 依頼を表示しない
+// [FIX BUG-15] 「発注済みにする」は APPROVED のときのみ表示
+function renderApprovalDetail(){
+  const req = ui.currentRequestId ? requestById(ui.currentRequestId) : null;
+  if(!req){ $("approval-detail").innerHTML=`<div class="card"><div class="muted">${t("msg_no_approval_sel")}</div><div style="margin-top:12px"><button class="btn secondary" onclick="activateSection('approvals')">${t("btn_goto_approvals")}</button></div></div>`; return; }
+  const firstLine=req.lines[0];
+  const relatedInventory=state.inventory.filter(i=>i.productId && firstLine?.productId && i.productId===firstLine.productId).slice(0,5);
+  const actionButtons = req.status==="SUBMITTED"
+    ? `<button class="btn" onclick="approveCurrentRequest()">${t("btn_approve")}</button><button class="btn danger" onclick="rejectCurrentRequest()">${t("btn_reject")}</button>`
+    : req.status==="APPROVED"
+    ? `<button class="btn secondary" onclick="markOrderedCurrentRequest()">${t("btn_order")}</button>`
+    : `<span class="badge ${statusClass(req.status)}" style="padding:8px 14px">${statusLabel(req.status)} — ${ui.lang==="en"?"No action needed":"操作不要"}</span>`;
+  $("approval-detail").innerHTML=`<div class="two-col"><div class="card"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div><h3>${req.requestNo}</h3><div class="hint">${t("approval_hint")}</div></div><span class="badge ${statusClass(req.status)}">${statusLabel(req.status)}</span></div><div class="fieldGrid"><div class="field"><div class="k">${t("approval_requester")}</div><div class="v">${userById(req.requesterId)?.name || "-"}</div></div><div class="field"><div class="k">${t("approval_purpose")}</div><div class="v">${req.purpose || "-"}</div></div><div class="field"><div class="k">${t("lbl_priority_badge")}</div><div class="v">${priorityBadge(req.priority)}</div></div><div class="field"><div class="k">${t("fld_submitted")}</div><div class="v">${req.submittedAt||"-"}</div></div></div><div style="margin-top:18px" class="tableWrap"><table><thead><tr><th>${t("th_product")}</th><th>${t("th_maker")}</th><th>${t("th_catalog")}</th><th>${t("th_qty")}</th><th>${t("th_vendor")}</th></tr></thead><tbody>${req.lines.map(l=>`<tr><td>${l.productNameSnapshot}</td><td>${l.manufacturerSnapshot || "-"}</td><td>${l.catalogNumberSnapshot || "-"}</td><td>${fmtQty(l.quantityRequested)} ${l.quantityUnit}</td><td>${vendorById(l.vendorId)?.name || "-"}</td></tr>`).join("")}</tbody></table></div><div style="margin-top:18px"><label>コメント</label><textarea id="approval-comment">${req.approvalComment || ""}</textarea><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${actionButtons}</div><div id="approval-msg"></div></div></div><div class="grid"><div class="card"><h3>現在庫</h3><div class="list">${relatedInventory.map(i=>`<div class="listItem"><div style="font-weight:700">${i.displayName}</div><div class="small muted">${fmtQty(i.currentQuantity)} ${i.quantityUnit}</div><div class="small muted">${locationPath(i.locationId)}</div></div>`).join("") || `<div class="muted">${t("msg_no_related")}</div>`}</div></div><div class="card"><h3>最近の購入履歴</h3><div class="list">${state.requests.filter(r=>r.lines.some(l=>l.productId===firstLine?.productId) && r.id!==req.id).slice(0,3).map(r=>`<div class="listItem"><div style="font-weight:700">${r.requestNo}</div><div class="small muted">${statusLabel(r.status)}</div></div>`).join("") || `<div class="muted">${t("msg_no_events")}</div>`}</div></div></div></div>`;
+}
+// [FIX BUG-02] ロールチェックを追加（STUDENT が直接呼んでも弾く）
+// [FIX BUG-07] 承認成功後に「受領登録へ →」リンクを表示
+function approveCurrentRequest(){
+  if(!["PROFESSOR","SECRETARY","ADMIN"].includes(ui.currentRole)){ $("approval-msg").innerHTML=`<div class="message info">${t("msg_approval_no_perm")}</div>`; return; }
+  const req=requestById(ui.currentRequestId);
+  if(!req){ $("approval-msg").innerHTML=`<div class="message info">${t("msg_no_req_sel")}</div>`; return; }
+  if(req.status!=="SUBMITTED"){ $("approval-msg").innerHTML=`<div class="message info">${t("msg_only_submitted")}</div>`; return; }
+  req.status="APPROVED"; req.approverId=ui.currentUserId; req.approvedAt=TODAY; req.approvalComment=$("approval-comment").value.trim();
+  renderApprovalDetail();
+  $("approval-msg").innerHTML=`<div class="message success">${t("msg_approved")} <button class="btn secondary" style="padding:6px 12px;font-size:12px;margin-left:8px" onclick="activateSection('receipts')">${t("approval_goto_receipt")}</button></div>`;
+  renderApprovals(); renderRequestDetail();
+}
+// [FIX BUG-02] 差し戻しにもロールチェック
+function rejectCurrentRequest(){
+  if(!["PROFESSOR","SECRETARY","ADMIN"].includes(ui.currentRole)){ $("approval-msg").innerHTML=`<div class="message info">${t("msg_approval_no_perm")}</div>`; return; }
+  const req=requestById(ui.currentRequestId);
+  if(!req){ $("approval-msg").innerHTML=`<div class="message info">${t("msg_no_req_sel")}</div>`; return; }
+  if(req.status!=="SUBMITTED"){ $("approval-msg").innerHTML=`<div class="message info">${t("msg_only_submitted")}</div>`; return; }
+  req.status="REJECTED"; req.approverId=ui.currentUserId; req.approvedAt=TODAY; req.approvalComment=$("approval-comment").value.trim() || t("btn_reject");
+  renderApprovalDetail();
+  $("approval-msg").innerHTML=`<div class="message success">${t("msg_rejected")}</div>`; renderApprovals(); renderRequestDetail();
+}
+// [FIX BUG-15] APPROVED 以外では発注済みにできない（ボタン制御は renderApprovalDetail 側で行う）
+function markOrderedCurrentRequest(){
+  const req=requestById(ui.currentRequestId);
+  if(!req||req.status!=="APPROVED"){ $("approval-msg").innerHTML=`<div class="message info">${t("msg_order_approved")}</div>`; return; }
+  req.status="ORDERED"; req.orderedAt=TODAY;
+  renderApprovalDetail();
+  $("approval-msg").innerHTML=`<div class="message success">${t("msg_ordered")}</div>`; renderApprovals();
+}
+function renderReceipts(){
+  // 未受領の明細が残っている依頼のみ表示（完了済みは履歴へ）
+  const eligible = state.requests.filter(r => {
+    if(!["APPROVED","ORDERED","PARTIALLY_RECEIVED"].includes(r.status)) return false;
+    return r.lines.some(l => receivedQtyForLine(l.id) < Number(l.quantityRequested));
+  });
+  $("receipts").innerHTML=`<div class="card"><h3>${t("sec_receipts")}</h3><div class="hint">${t("receipt_hint")}</div>${eligible.length===0?`<div class="message info" style="margin-top:12px">${t("msg_no_receipts")}</div><div style="margin-top:10px"><button class="btn secondary" onclick="activateSection('receipt-history')">${t("btn_receipt_hist")}</button></div>`:`<label>${t("lbl_target_req")}</label><select id="receipt-request" onchange="refreshReceiptLineOptions()">${eligible.map(r=>`<option value="${r.id}">${r.requestNo} / ${userById(r.requesterId)?.name || "-"} / ${statusLabel(r.status)}</option>`).join("")}</select><label style="margin-top:12px">${t("lbl_target_line")}</label><select id="receipt-line"></select><div class="grid grid-3" style="margin-top:12px"><div><label>${t("lbl_recv_date")}</label><input id="receipt-date" value="${TODAY}"></div><div><label>${t("lbl_recv_by")}</label><input id="receipt-by" value="${currentUser().name}"></div><div><label>${t("lbl_qty")}</label><input id="receipt-qty" value="1"></div><div><label>${t("lbl_unit")}</label><input id="receipt-unit" value="本"></div><div><label>${t("lbl_lot")}</label><input id="receipt-lot" placeholder="${ui.lang==='en'?'Optional':'任意'}"></div></div><label style="margin-top:12px">${t("lbl_location")}</label><select id="receipt-loc">${state.locations.map(l=>`<option value="${l.id}">${locationPath(l.id)}${l.note?` — ${l.note}`:""}</option>`).join("")}</select><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button class="btn" onclick="receiveSelectedLine()">${t("btn_receive")}</button><button class="btn secondary" onclick="activateSection('receipt-history')">${t("btn_receipt_hist")}</button></div><div id="receipt-msg"></div>`}</div>`;
+  if(eligible.length) refreshReceiptLineOptions();
+}
+// 未受領残量がある明細のみ選択肢に表示
+function refreshReceiptLineOptions(){
+  const req=requestById($("receipt-request")?.value); if(!req) return;
+  const remaining = req.lines.filter(l => receivedQtyForLine(l.id) < Number(l.quantityRequested));
+  $("receipt-line").innerHTML=remaining.map(l=>`<option value="${l.id}">${l.productNameSnapshot} — ${ui.lang==="en"?"Req":"依頼"}: ${fmtQty(l.quantityRequested)} ${l.quantityUnit}、${ui.lang==="en"?"Recv":"受領済"}: ${fmtQty(receivedQtyForLine(l.id))}</option>`).join("");
+}
+// [FIX MISS-07] 受領後に在庫詳細へのリンクを表示
+function receiveSelectedLine(){ const req=requestById($("receipt-request").value); const line=req?.lines.find(l=>l.id === $("receipt-line").value); const qty=Number($("receipt-qty").value); if(!line || !qty || qty<=0){ $("receipt-msg").innerHTML=`<div class="message info">${t("msg_receipt_check")}</div>`; return; } const receipt={ id:nextId("rcp"), purchaseRequestId:req.id, purchaseRequestLineId:line.id, receivedById:ui.currentUserId, receivedDate:$("receipt-date").value, quantityReceived:qty, quantityUnit:$("receipt-unit").value.trim(), lotNumber:$("receipt-lot").value.trim(), locationId:$("receipt-loc").value, note:"" }; state.receipts.unshift(receipt); const item={ id:nextId("inv"), productId:line.productId || null, parentItemId:null, displayName:line.productNameSnapshot, barcode:"INV-" + Math.random().toString(36).slice(2,8).toUpperCase(), lotNumber:receipt.lotNumber, receivedDate:receipt.receivedDate, openedDate:null, expirationDate:null, initialQuantity:qty, currentQuantity:qty, quantityUnit:receipt.quantityUnit, status:"AVAILABLE", locationId:receipt.locationId, createdById:ui.currentUserId }; state.inventory.unshift(item); eventPush({inventoryItemId:item.id,eventType:"RECEIVE",quantityDelta:qty,quantityUnit:receipt.quantityUnit,actorUserId:ui.currentUserId,notes:ui.lang==="en"?`Receipt: ${req.requestNo}`:`${req.requestNo} の受領`}); req.status=recalcRequestStatus(req); renderReceipts(); $("receipt-msg") && ($("receipt-msg").innerHTML=`<div class="message success">受領登録しました。「${item.displayName}」を在庫化しました。 <button class="btn secondary" style="padding:5px 12px;font-size:12px;margin-left:8px" onclick="openDetail('${item.id}')">${t("msg_inv_detail")}</button></div>`); renderInventory(); renderDashboard(); renderReceiptHistory(); renderRequestDetail(); }
+function renderReceiptHistory(){ $("receipt-history").innerHTML=`<div class="card"><h3>${t("sec_receipt_history")}</h3><div class="hint">依頼No、ロット、数量、保管先を確認できます。</div><div class="tableWrap"><table><thead><tr><th>${t("th_recv")}</th><th>${t("th_req_no")}</th><th>${t("th_product")}</th><th>${t("th_qty")}</th><th>${t("th_lot")}</th><th>${t("th_location")}</th><th>${t("th_receiver")}</th></tr></thead><tbody>${state.receipts.map(r=>{ const req=requestById(r.purchaseRequestId); const line=req?.lines.find(l=>l.id===r.purchaseRequestLineId); return `<tr><td>${r.receivedDate}</td><td>${req?.requestNo || "-"}</td><td>${line?.productNameSnapshot || "-"}</td><td>${fmtQty(r.quantityReceived)} ${r.quantityUnit}</td><td>${r.lotNumber || "-"}</td><td>${locationPath(r.locationId)}</td><td>${actorName(r.receivedById)}</td></tr>`; }).join("")}</tbody></table></div></div>`; }
+// [FIX BUG-K] DISPOSED 在庫からは小分け不可
+function renderAliquots(){
+  const item=inventoryById(ui.currentDetailId) || state.inventory.find(i=>i.status!=="DISPOSED");
+  if(!item || item.status==="DISPOSED"){
+    $("aliquots").innerHTML=`<div class="card"><div class="message info">${t("msg_disposed_aliquot")}</div><button class="btn secondary" style="margin-top:12px" onclick="activateSection('inventory')">${t("btn_goto_inv")}</button></div>`;
+    return;
+  }
+  $("aliquots").innerHTML=`<div class="card">
+    <h3>${t("aliquot_title")}</h3>
+    <div class="hint">${t("aliquot_hint")}</div>
+    <div class="field"><div class="k">${t("aliquot_source")}</div><div class="v">${item.displayName} — ${t("th_remaining")}: ${fmtQty(item.currentQuantity)} ${item.quantityUnit}${item.expirationDate?` / 期限: ${item.expirationDate}`:""}</div></div>
+    <div class="grid grid-2" style="margin-top:12px">
+      <div><label>${t("aliquot_count")}</label><input id="ali-count" value="5" type="number" min="1" step="1" oninput="updateAliTotal()"></div>
+      <div><label>${t("aliquot_each")} (${item.quantityUnit})</label><input id="ali-qty" value="50" type="number" min="0.001" step="any" oninput="updateAliTotal()"></div>
+      <div><label>${t("lbl_location")}</label><select id="ali-loc">${state.locations.map(l=>`<option value="${l.id}" ${l.id==="loc-box02"?"selected":""}>${locationPath(l.id)}${l.note?` — ${l.note}`:""}</option>`).join("")}</select></div>
+    </div>
+    <div id="ali-total-info" style="margin-top:8px;font-size:13px;color:var(--muted)">${t("aliquot_total")} — ${item.quantityUnit}</div>
+    <div style="margin-top:14px"><button class="btn" onclick="createAliquots()">${t("btn_create")}</button></div>
+    <div id="ali-msg"></div>
+  </div>`;
+  updateAliTotal();
+}
+function updateAliTotal(){
+  const ti=$("ali-total-info"); if(!ti) return;
+  const item=inventoryById(ui.currentDetailId)||state.inventory[0];
+  const count=Number($("ali-count")?.value||0), each=Number($("ali-qty")?.value||0);
+  const total=count*each;
+  const over = total > item.currentQuantity;
+  ti.innerHTML=`${t("aliquot_total")} <strong style="color:${over?"var(--red)":"inherit"}">${fmtQty(total)} ${item.quantityUnit}</strong>${over?" — ⚠ 残量超過":""}`;
+}
+function createAliquots(){
+  const item=inventoryById(ui.currentDetailId);
+  const count=Number($("ali-count").value); const each=Number($("ali-qty").value);
+  const total=count*each;
+  if(!count||!each||total>item.currentQuantity){ $("ali-msg").innerHTML=`<div class="message info">${t("msg_aliquot_err")} (${fmtQty(total)} ${item.quantityUnit})</div>`; return; }
+  item.currentQuantity -= total; item.status=recalcInventoryStatus(item);
+  eventPush({inventoryItemId:item.id,eventType:"ALIQUOT_SOURCE_CONSUME",quantityDelta:-total,quantityUnit:item.quantityUnit,actorUserId:ui.currentUserId,notes:`小分け ${count}本`});
+  for(let i=0;i<count;i++){
+    const child={ id:nextId("inv"), productId:item.productId, parentItemId:item.id, displayName:`${item.displayName} aliquot ${String(i+1).padStart(2,"0")}`, barcode:"INV-AQ-"+Math.random().toString(36).slice(2,7).toUpperCase(), lotNumber:item.lotNumber, receivedDate:TODAY, openedDate:null, expirationDate:null, initialQuantity:each, currentQuantity:each, quantityUnit:item.quantityUnit, status:"AVAILABLE", locationId:$("ali-loc").value, createdById:ui.currentUserId };
+    state.inventory.push(child);
+    eventPush({inventoryItemId:child.id,eventType:"ALIQUOT_CHILD_CREATE",quantityDelta:each,quantityUnit:item.quantityUnit,actorUserId:ui.currentUserId,notes:t("e_ALIQUOT_CHILD_CREATE")});
+  }
+  $("ali-msg").innerHTML=`<div class="message success">${count}${t("msg_aliquot_ok")}${fmtQty(item.currentQuantity)} ${item.quantityUnit}</div>`;
+  renderInventory(); renderDetail(); renderDashboard();
+}
+// [FIX BUG-08/MISS-05] 動的コンポーネント・mL フィルタ除去
+// [FIX BUG-09] ±10% バリデーション（方針: 最終容量は成分合計の ±10% 以内）
+// [FIX BUG-06/MISS-03] DerivedBatch / DerivedBatchComponent を state に記録
+function openNewBatch(){ ui.pendingBatchComps=[]; activateSection("batches"); }
+
+function initBatchComps(){
+  ui.pendingBatchComps=[
+    {id:nextId("bc"), itemId:"inv-dmem-001", qty:400, unit:"mL"},
+    {id:nextId("bc"), itemId:"inv-fbs-001",  qty:50,  unit:"mL"},
+    {id:nextId("bc"), itemId:"inv-ps-001",   qty:5,   unit:"mL"},
+  ];
+}
+
+function renderBatches(){
+  if(!ui.pendingBatchComps.length) initBatchComps();
+  const compTotal = ui.pendingBatchComps.reduce((s,c)=>s+Number(c.qty||0), 0);
+  const rows = ui.pendingBatchComps.map((c,idx)=>`
+    <tr>
+      <td><select onchange="updateBatchComp(${idx},'itemId',this.value)">
+        ${state.inventory.filter(i=>i.currentQuantity>0).map(i=>`<option value="${i.id}" ${i.id===c.itemId?"selected":""}>${i.displayName} (${fmtQty(i.currentQuantity)} ${i.quantityUnit})</option>`).join("")}
+      </select></td>
+      <td><input value="${c.qty}" style="width:80px" onchange="updateBatchComp(${idx},'qty',+this.value)"></td>
+      <td><input value="${c.unit}" style="width:60px" onchange="updateBatchComp(${idx},'unit',this.value)"></td>
+      <td><button class="btn danger" style="padding:5px 10px;font-size:12px" onclick="removeBatchComp(${idx})">${t("btn_delete")}</button></td>
+    </tr>`).join("");
+  $("batches").innerHTML=`<div class="card">
+    <h3>${t("batch_title")}</h3>
+    <div class="hint">${t("batch_hint")}</div>
+    ${state.recipes.length>0?`<div style="margin-bottom:12px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px"><span class="small" style="color:#166534;font-weight:700">💡 レシピから読み込み：</span> ${state.recipes.map(r=>`<button class="btn secondary" style="padding:5px 10px;font-size:12px;margin:2px" onclick="applyRecipeToBatch('${r.id}')">${r.name}</button>`).join("")}</div>`:""}
+    <div class="grid grid-2">
+      <div><label>${t("lbl_batch_name")}</label><input id="batch-name" value="Medium-B"></div>
+      <div><label>${t("lbl_batch_type")}</label><select id="batch-type">
+        <option value="PREPARED_MEDIA">${t("btype_PREPARED_MEDIA")}</option>
+        <option value="PREPARED_BUFFER">${t("btype_PREPARED_BUFFER")}</option>
+        <option value="MIX">${t("btype_MIX")}</option>
+        <option value="SAMPLE">${t("btype_SAMPLE")}</option>
+      </select></div>
+    </div>
+    <div class="tableWrap" style="margin-top:12px">
+      <table>
+        <thead><tr><th>${t("th_product")}</th><th>${t("th_qty")}</th><th>${t("th_unit")}</th><th></th></tr></thead>
+        <tbody id="batch-comp-rows">${rows}</tbody>
+      </table>
+    </div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <button class="btn secondary" onclick="addBatchComp()">${t("btn_add_comp")}</button>
+      <span id="batch-comp-sum" class="small muted">${t("batch_comp_total")} ${fmtQty(compTotal)}</span>
+    </div>
+    <div class="grid grid-2" style="margin-top:12px">
+      <div><label>${t("lbl_batch_final")}</label><input id="batch-final" value="${fmtQty(compTotal)}"></div>
+      <div><label>${t("lbl_unit")}</label><input id="batch-unit" value="mL"></div>
+      <div><label>${t("lbl_location")}</label><select id="batch-loc">${state.locations.map(l=>`<option value="${l.id}" ${l.id==="loc-box02"?"selected":""}>${locationPath(l.id)}${l.note?` — ${l.note}`:""}</option>`).join("")}</select></div>
+    </div>
+    <div style="margin-top:14px"><button class="btn" onclick="createBatch()">${t("btn_create")}</button></div>
+    <div id="batch-msg"></div>
+  </div>`;
+}
+
+function updateBatchComp(idx, field, value){
+  if(!ui.pendingBatchComps[idx]) return;
+  ui.pendingBatchComps[idx][field] = value;
+  // qty変更時は合計量ラベルだけ更新（tbody再描画はしない→フォーカス維持）
+  if(field==="qty"){
+    const total = ui.pendingBatchComps.reduce((s,c)=>s+Number(c.qty||0), 0);
+    const fv = $("batch-final"); if(fv) fv.value = fmtQty(total);
+    // 合計行を更新（ラベルがあれば）
+    const sumEl = $("batch-comp-sum"); if(sumEl) sumEl.textContent = `${t("batch_comp_total")} ${fmtQty(total)}`;
+  }
+  // itemId変更時は表示名を更新
+  if(field==="itemId"){
+    const nameEl = document.querySelector(`#batch-comp-rows tr:nth-child(${idx+1}) td:first-child select`);
+    if(nameEl) nameEl.value = value;
+  }
+}
+
+function addBatchComp(){
+  ui.pendingBatchComps.push({id:nextId("bc"), itemId: state.inventory.find(i=>i.currentQuantity>0)?.id||"", qty:0, unit:"mL"});
+  renderBatches();
+}
+function removeBatchComp(idx){ ui.pendingBatchComps.splice(idx,1); renderBatches(); }
+
+function createBatch(){
+  const name = $("batch-name").value.trim();
+  const finalVol = Number($("batch-final").value);
+  if(!name){ $("batch-msg").innerHTML=`<div class="message info">${t("msg_enter_name")}</div>`; return; }
+  if(!ui.pendingBatchComps.length){ $("batch-msg").innerHTML=`<div class="message info">${t("msg_batch_no_comp")}</div>`; return; }
+  const comps = ui.pendingBatchComps.map(c=>({ item:inventoryById(c.itemId), qty:Number(c.qty||0), unit:c.unit }));
+  if(comps.some(c=>!c.item||c.qty<=0)){ $("batch-msg").innerHTML=`<div class="message info">${t("msg_batch_qty_err")}</div>`; return; }
+  if(comps.some(c=>c.qty>c.item.currentQuantity)){ $("batch-msg").innerHTML=`<div class="message info">${t("msg_batch_over")}</div>`; return; }
+  if(finalVol<=0){ $("batch-msg").innerHTML=`<div class="message info">${t("msg_batch_final_err")}</div>`; return; }
+  // [v4] ±10%制限を撤廃 — 最終容量は自由に設定可
+  // 元在庫消費
+  comps.forEach(c=>{
+    c.item.currentQuantity -= c.qty; c.item.status=recalcInventoryStatus(c.item);
+    eventPush({inventoryItemId:c.item.id, eventType:"MIX_SOURCE_CONSUME", quantityDelta:-c.qty, quantityUnit:c.unit, actorUserId:ui.currentUserId, notes:`${name} 作成`});
+  });
+  // 混合物在庫を生成
+  const item={ id:nextId("inv"), productId:null, parentItemId:null, displayName:name, barcode:"INV-BATCH-"+Math.random().toString(36).slice(2,7).toUpperCase(), lotNumber:null, receivedDate:TODAY, openedDate:null, expirationDate:null, initialQuantity:finalVol, currentQuantity:finalVol, quantityUnit:$("batch-unit").value.trim(), status:"AVAILABLE", locationId:$("batch-loc").value, createdById:ui.currentUserId };
+  state.inventory.unshift(item);
+  eventPush({inventoryItemId:item.id, eventType:"MIX_CREATE", quantityDelta:finalVol, quantityUnit:item.quantityUnit, actorUserId:ui.currentUserId, notes:`${name} 作成完了`});
+  // [FIX BUG-06/MISS-03] DerivedBatch / DerivedBatchComponent を state に記録
+  const batchId = nextId("db");
+  state.derivedBatches.unshift({id:batchId, name, batchType:$("batch-type").value, resultItemId:item.id, createdById:ui.currentUserId, createdAt:TODAY});
+  comps.forEach(c=>{ state.derivedBatchComponents.push({id:nextId("dbc"), derivedBatchId:batchId, sourceItemId:c.item.id, quantityUsed:c.qty, quantityUnit:c.unit}); });
+  ui.pendingBatchComps=[];
+  $("batch-msg").innerHTML=`<div class="message success">${name} ${t("msg_received")} <button class="btn secondary" style="padding:5px 12px;font-size:12px;margin-left:8px" onclick="openDetail('${item.id}')">${t("msg_inv_detail")}</button></div>`;
+  renderInventory(); renderDashboard();
+}
+function showLocation(id){ ui.currentLocationId=id; renderLocations(); }
+
+// [FIX BUG-A] ルートをハードコードせず parentId===null のロケーションを動的に列挙
+function buildLocationTree(parentId){
+  const children=state.locations.filter(l=>l.parentId===parentId);
+  if(!children.length) return "";
+  return `<ul>${children.map(l=>`<li><span class="node ${ui.currentLocationId===l.id?"selected":""}" onclick="showLocation('${l.id}')">${l.name}${l.note?` <span style="font-size:11px;color:#94a3b8">— ${l.note}</span>`:""}</span>${buildLocationTree(l.id)}</li>`).join("")}</ul>`;
+}
+
+// [FIX BUG-B] 子孫ロケーションをすべて収集するヘルパー
+function collectDescendantIds(id){
+  const children=state.locations.filter(l=>l.parentId===id);
+  return children.reduce((acc,c)=>[...acc,c.id,...collectDescendantIds(c.id)],[]);
+}
+
+// [v3→v5] ロケーション管理を全ロール開放 — 追加・編集・削除を統合
+function renderLocations(){
+  const selected = locationById(ui.currentLocationId) || state.locations[0];
+  // 選択中が削除されていたら先頭に戻す
+  if(ui.currentLocationId && !locationById(ui.currentLocationId)){
+    ui.currentLocationId = state.locations[0]?.id || null;
+  }
+  const items = state.inventory.filter(i=>i.locationId===selected?.id && i.status!=="DISPOSED");
+  const editId = $("locations").dataset.editId || "";
+  const editL = editId ? locationById(editId) : null;
+  // ルートノード（parentId===null）を動的に取得
+  const roots = state.locations.filter(l=>l.parentId===null);
+  const treeHtml = roots.length
+    ? roots.map(r=>`<li><span class="node ${ui.currentLocationId===r.id?"selected":""}" onclick="showLocation('${r.id}')">${r.name}${r.note?` <span style="font-size:11px;color:#94a3b8">— ${r.note}</span>`:""}</span>${buildLocationTree(r.id)}</li>`).join("")
+    : `<li class="muted small">${t("loc_none")}</li>`;
+  $("locations").innerHTML = `
+    <div class="grid grid-2">
+      <div class="card tree">
+        <h3>${t("loc_title")}</h3>
+        <div class="hint">${t("loc_hint")}</div>
+        <ul>${treeHtml}</ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div>
+              <h3>${t("loc_selected")} ${selected ? locationPath(selected.id) : (ui.lang==="en"?"(none)":"（なし）")}</h3>
+              <div class="hint">${t("loc_items")}</div>
+            </div>
+            ${selected ? `<div style="display:flex;gap:6px;flex-shrink:0">
+              <button class="btn secondary" style="padding:5px 10px;font-size:12px" onclick="startEditLocation('${selected.id}')">${t("btn_edit")}</button>
+              <button class="btn danger" style="padding:5px 10px;font-size:12px" onclick="deleteLocation('${selected.id}')">${t("btn_delete")}</button>
+            </div>` : ""}
+          </div>
+          <div class="list">${items.map(i=>`<div class="listItem">
+            <div style="font-weight:700">${i.displayName}</div>
+            <div class="small muted">${fmtQty(i.currentQuantity)} ${i.quantityUnit}</div>
+            <div style="margin-top:6px"><button class="btn secondary" style="padding:5px 10px;font-size:12px" onclick="openDetail('${i.id}')">${t("btn_detail")}</button></div>
+          </div>`).join("") || `<div class="muted small">${t("loc_no_items")}</div>`}</div>
+        </div>
+        <div class="card">
+          <h4>${editL ? `${t("loc_selected")} ${editL.name}` : t("loc_add")}</h4>
+          ${editL ? `<div class="message info" style="margin-bottom:8px">${t("recipe_editing").split("。")[0]}</div>` : ""}
+          <label>${t("lbl_parent_loc")}</label>
+          <select id="loc-parent">
+            <option value="">${t("loc_root")}</option>
+            ${state.locations.filter(l=>l.id!==(editL?.id)).map(l=>`<option value="${l.id}" ${(editL?.parentId||"")===l.id?"selected":""}>${locationPath(l.id)}</option>`).join("")}
+          </select>
+          <label style="margin-top:8px">${t("lbl_loc_name")}</label><input id="loc-name" value="${editL?.name||""}">
+          <label style="margin-top:8px">${t("lbl_loc_type")}</label>
+          <select id="loc-type">
+            ${["ROOM","SHELF","FRIDGE","FREEZER","BOX","POSITION"].map(t=>`<option ${(editL?.type||"BOX")===t?"selected":""}>${t}</option>`).join("")}
+          </select>
+          <label style="margin-top:8px">${t("lbl_loc_note")} <span class="small muted">${t("lbl_loc_note_hint")}</span></label>
+          <input id="loc-note" value="${editL?.note||""}" placeholder="${ui.lang==='en'?'e.g. right side of shelf':'例: 棚の右端、青キャップ類'}">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <button class="btn" onclick="${editL?`saveEditLocation('${editL.id}')`:"createLocation()"}">${editL?t("btn_save"):t("btn_add")}</button>
+            ${editL?`<button class="btn secondary" onclick="cancelEditLocation()">${t("btn_cancel")}</button>`:""}
+          </div>
+          <div id="loc-msg"></div>
+        </div>
+      </div>
+    </div>`;
+}
+function startEditLocation(id){ $("locations").dataset.editId=id; renderLocations(); }
+function cancelEditLocation(){ $("locations").dataset.editId=""; renderLocations(); }
+// [FIX BUG-B] 子孫も含めて在庫チェック → 再帰削除
+function deleteLocation(id){
+  const allIds = [id, ...collectDescendantIds(id)];
+  const blockedItems = state.inventory.filter(i=>allIds.includes(i.locationId) && i.status!=="DISPOSED");
+  if(blockedItems.length>0){
+    alert(ui.lang==="en"?`This location has ${blockedItems.length} item(s) (including sub-locations). Move inventory first.`:t("msg_loc_inv"));
+    return;
+  }
+  const childCount = allIds.length - 1;
+  const msg = childCount > 0
+    ? (ui.lang==="en"?`Delete "${locationById(id)?.name}" and its ${childCount} sub-location(s)?`:`「${locationById(id)?.name}」とその子ロケーション ${childCount} 件をすべて削除しますか？`)
+    : (ui.lang==="en"?`Delete "${locationById(id)?.name}"?`:`「${locationById(id)?.name}」を削除しますか？`);
+  if(!confirm(msg)) return;
+  state.locations = state.locations.filter(l=>!allIds.includes(l.id));
+  ui.currentLocationId = state.locations[0]?.id || null;
+  $("locations").dataset.editId="";
+  renderLocations();
+}
+function saveEditLocation(id){
+  const name=$("loc-name").value.trim();
+  if(!name){ $("loc-msg").innerHTML=`<div class="message info">${t("msg_enter_name")}</div>`; return; }
+  const l=locationById(id);
+  l.name=name; l.parentId=$("loc-parent").value||null; l.type=$("loc-type").value; l.note=$("loc-note").value.trim();
+  $("locations").dataset.editId=""; renderLocations();
+}
+function createLocation(){
+  const name=$("loc-name").value.trim();
+  if(!name){ $("loc-msg").innerHTML=`<div class="message info">${t("msg_enter_name")}</div>`; return; }
+  state.locations.push({ id:nextId("loc"), name, type:$("loc-type").value, parentId:$("loc-parent").value||null, note:$("loc-note").value.trim(), isActive:true });
+  $("loc-msg").innerHTML=`<div class="message success">${t("msg_created_loc")}</div>`;
+  renderLocations();
+}
+// admin-locationsは後方互換のため残す
+function renderAdminLocations(){ renderLocations(); }
+function renderAdminHome(){
+  $("admin-home").innerHTML=`
+    <div class="grid grid-3">
+      <div class="card"><div class="small muted">${t("admin_user_count")}</div><div class="metric">${state.users.length}</div></div>
+      <div class="card"><div class="small muted">${t("dash_total")}</div><div class="metric">${state.inventory.filter(i=>i.status!=="DISPOSED").length}</div></div>
+      <div class="card"><div class="small muted">${t("admin_log_count")}</div><div class="metric">${state.events.length}</div></div>
+    </div>
+    <div class="card">
+      <h3>${t("admin_menu")}</h3>
+      <div class="hint">${t("admin_hint")}</div>
+      <div class="pillnav">
+        <button onclick="activateSection('admin-users')">👥 ${t("admin_users")}</button>
+        <button onclick="activateSection('admin-import')">📂 ${t("admin_import")}</button>
+        <button onclick="activateSection('admin-audit')">🔍 ${t("admin_audit")}</button>
+      </div>
+      <div style="margin-top:16px;padding:12px;background:#f8fafc;border:1px solid var(--line);border-radius:12px">
+        <div class="small muted" style="margin-bottom:8px">${t("admin_other")}</div>
+        <div class="pillnav">
+          <button onclick="activateSection('inventory')">${t("btn_inv")}</button>
+          <button onclick="activateSection('products')">${t("sec_products")}</button>
+          <button onclick="activateSection('locations')">${t("sec_locations")}</button>
+          <button onclick="activateSection('receipts')">${t("sec_receipts")}</button>
+          <button onclick="activateSection('admin-adjustments')">${t("sec_admin_adjustments")}</button>
+        </div>
+      </div>
+    </div>`;
+}
+// [v3] ユーザー管理 — 追加・インライン編集・有効無効切替
+function renderAdminUsers(){
+  const editId = $("admin-users").dataset.editId || "";
+  const editU = editId ? userById(editId) : null;
+  $("admin-users").innerHTML = `
+    <div class="card">
+      <div class="grid grid-2">
+        <div class="tableWrap">
+          <h3>${t("sec_admin_users")}</h3>
+          <div class="hint">${t("sub_admin_users")}</div>
+          <table><thead><tr><th>${t("th_name")}</th><th>${t("th_email")}</th><th>${t("th_role")}</th><th>${t("th_code")}</th><th></th></tr></thead>
+          <tbody>${state.users.map(u=>`<tr ${editId===u.id?'style="background:#eef2ff"':""}>
+            <td><div style="font-weight:700">${u.name}</div></td>
+            <td class="small">${u.email}</td>
+            <td><span class="badge b-draft">${u.role}</span></td>
+            <td class="mono small">${u.memberCode||"-"}</td>
+            <td><button class="btn secondary" style="padding:4px 8px;font-size:11px" onclick="startEditUser('${u.id}')">${t("btn_edit")}</button>
+              <button class="btn danger" style="padding:4px 8px;font-size:11px;margin-top:3px" onclick="deleteUser('${u.id}')">${t("btn_delete")}</button>
+          </tr>`).join("")}
+          </tbody></table>
+        </div>
+        <div>
+          <h4>${editU ? `${t("loc_selected")} ${editU.name}` : t("btn_add")}</h4>
+          ${editU ? `<div class="message info" style="margin-bottom:8px">${t("recipe_editing").split("。")[0]}</div>` : ""}
+          <label>${t("lbl_name")}</label><input id="user-name" value="${editU?.name||""}">
+          <label style="margin-top:8px">${t("lbl_email")}</label><input id="user-email" value="${editU?.email||""}">
+          <label style="margin-top:8px">${t("lbl_role")}</label>
+          <select id="user-role">
+            ${["STUDENT","PROFESSOR","SECRETARY","ADMIN"].map(r=>`<option ${(editU?.role||"STUDENT")===r?"selected":""}>${r}</option>`).join("")}
+          </select>
+          <label style="margin-top:8px">${t("lbl_code")}</label><input id="user-code" value="${editU?.memberCode||""}">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <button class="btn" onclick="${editU?`saveEditUser('${editU.id}')`:"createUser()"}">${editU?t("btn_save"):t("btn_add")}</button>
+            ${editU?`<button class="btn secondary" onclick="cancelEditUser()">${t("btn_cancel")}</button>`:""}
+          </div>
+          <div id="user-msg"></div>
+        </div>
+      </div>
+    </div>`;
+}
+function startEditUser(id){ $("admin-users").dataset.editId=id; renderAdminUsers(); }
+function cancelEditUser(){ $("admin-users").dataset.editId=""; renderAdminUsers(); }
+function deleteUser(id){
+  if(id === ui.currentUserId){ alert(t("msg_self_delete")); return; }
+  if(!confirm(ui.lang==="en"?"Delete this user? (Related records remain.)":"このユーザーを削除しますか？\n（関連する依頼・イベント履歴は残ります）")) return;
+  state.users = state.users.filter(u=>u.id!==id);
+  renderAdminUsers();
+}
+function saveEditUser(id){
+  const name=$("user-name").value.trim(), email=$("user-email").value.trim();
+  if(!name||!email){ $("user-msg").innerHTML=`<div class="message info">${t("msg_enter_email")}</div>`; return; }
+  const u=userById(id);
+  u.name=name; u.email=email; u.role=$("user-role").value; u.memberCode=$("user-code").value.trim();
+  $("admin-users").dataset.editId=""; renderAdminUsers();
+}
+function createUser(){
+  const name=$("user-name").value.trim(), email=$("user-email").value.trim();
+  if(!name||!email){ $("user-msg").innerHTML=`<div class="message info">${t("msg_enter_email")}</div>`; return; }
+  state.users.push({ id:nextId("u"), name, email, role:$("user-role").value, memberCode:$("user-code").value.trim(), isActive:true });
+  $("user-msg").innerHTML=`<div class="message success">${t("msg_created_user")}</div>`;
+  renderAdminUsers();
+}
+// [v3] 試薬・製品登録 — 全ロール可、追加・編集・有効無効切替
+function renderProducts(){
+  const editId = $("products").dataset.editId || "";
+  const editP = editId ? state.products.find(p=>p.id===editId) : null;
+  $("products").innerHTML = `
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>${t("sec_products")}</h3>
+        <div class="hint">${t("sub_products")}</div>
+        <div class="tableWrap"><table>
+          <thead><tr><th>${t("th_product")}</th><th>${t("th_maker")}</th><th>${t("th_catalog")}</th><th>${t("th_cat")}</th><th>${t("th_storage")}</th><th></th></tr></thead>
+          <tbody>${state.products.map(p=>`<tr>
+            <td><div style="font-weight:700">${p.name}</div><div class="small muted">${p.aliasName||""}</div></td>
+            <td>${p.manufacturer||"-"}</td>
+            <td class="mono">${p.catalogNumber||"-"}</td>
+            <td>${p.category}</td>
+            <td>${p.storageCondition||"-"}</td>
+            <td style="white-space:nowrap">
+              <button class="btn secondary" style="padding:5px 10px;font-size:12px" onclick="startEditProduct('${p.id}')">${t("btn_edit")}</button>
+              <button class="btn danger" style="padding:5px 10px;font-size:12px;margin-top:4px" onclick="deleteProduct('${p.id}')">${t("btn_delete")}</button>
+            </td>
+          </tr>`).join("")}
+          </tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h4>${editP ? `${t("loc_selected")} ${editP.name}` : t("btn_add")}</h4>
+        ${editP ? `<div class="message info" style="margin-bottom:10px">${t("recipe_editing")}</div>` : ""}
+        <label>${t("lbl_prod_name")}</label><input id="prod-name" value="${editP?.name||""}">
+        <label style="margin-top:10px">${t("lbl_alias")}</label><input id="prod-alias" value="${editP?.aliasName||""}">
+        <label style="margin-top:10px">${t("lbl_maker")}</label><input id="prod-manufacturer" value="${editP?.manufacturer||""}">
+        <label style="margin-top:10px">${t("lbl_catalog")}</label><input id="prod-catalog" value="${editP?.catalogNumber||""}">
+        <label style="margin-top:10px">${t("lbl_category")}</label>
+        <select id="prod-category">
+          ${["CHEMICAL","BIOLOGICAL","MEDIA","BUFFER","SAMPLE"].map(c=>`<option value="${c}" ${(editP?.category||"BIOLOGICAL")===c?"selected":""}>${t("cat_"+c)||c}</option>`).join("")}
+        </select>
+        <label style="margin-top:10px">${t("lbl_unit")}</label><input id="prod-unit" value="${editP?.defaultUnit||"mL"}">
+        <label style="margin-top:10px">${t("lbl_storage")}</label>
+        <select id="prod-storage">
+          ${["RT","4C","-20C","-80C"].map(c=>`<option ${(editP?.storageCondition||"RT")===c?"selected":""}>${c}</option>`).join("")}
+        </select>
+        <label style="margin-top:10px">${t("lbl_reorder")}</label><input id="prod-reorder" value="${editP?.reorderPoint||10}" type="number" min="0">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn" onclick="${editP?`saveEditProduct('${editP.id}')`:"createProduct()"}">${editP?t("btn_save"):t("btn_add")}</button>
+          ${editP?`<button class="btn secondary" onclick="cancelEditProduct()">${t("btn_cancel")}</button>`:""}
+        </div>
+        <div id="prod-msg"></div>
+      </div>
+    </div>`;
+}
+function startEditProduct(id){ $("products").dataset.editId=id; renderProducts(); }
+function cancelEditProduct(){ $("products").dataset.editId=""; renderProducts(); }
+function deleteProduct(id){
+  const linked = state.inventory.filter(i=>i.productId===id && i.status!=="DISPOSED");
+  if(linked.length>0){
+    alert(ui.lang==="en"?`This product has ${linked.length} linked item(s). Delete inventory first.`:t("msg_prod_linked"));
+    return;
+  }
+  if(!confirm(ui.lang==="en"?"Delete this product? (Order records remain.)":"この製品を削除しますか？\n（作成済みの依頼の記録は残ります）")) return;
+  state.products = state.products.filter(p=>p.id!==id);
+  renderProducts();
+}
+function createProduct(){
+  const name=$("prod-name").value.trim();
+  if(!name){ $("prod-msg").innerHTML=`<div class="message info">${t("msg_enter_product")}</div>`; return; }
+  state.products.push({ id:nextId("prod"), name, aliasName:$("prod-alias").value.trim(), manufacturer:$("prod-manufacturer").value.trim(), vendorId:null, catalogNumber:$("prod-catalog").value.trim(), category:$("prod-category").value, reorderPoint:Number($("prod-reorder").value||0), defaultUnit:$("prod-unit").value.trim()||"mL", storageCondition:$("prod-storage").value, isActive:true });
+  $("prod-msg").innerHTML=`<div class="message success">${t("msg_created_product")}</div>`;
+  $("products").dataset.editId=""; renderProducts();
+}
+function saveEditProduct(id){
+  const name=$("prod-name").value.trim();
+  if(!name){ $("prod-msg").innerHTML=`<div class="message info">${t("msg_enter_product")}</div>`; return; }
+  const p=state.products.find(q=>q.id===id);
+  p.name=name; p.aliasName=$("prod-alias").value.trim(); p.manufacturer=$("prod-manufacturer").value.trim();
+  p.catalogNumber=$("prod-catalog").value.trim(); p.category=$("prod-category").value;
+  p.defaultUnit=$("prod-unit").value.trim()||"mL"; p.storageCondition=$("prod-storage").value;
+  p.reorderPoint=Number($("prod-reorder").value||0);
+  $("products").dataset.editId=""; renderProducts();
+}
+// adminProductsは後方互換のため残す（render()が呼ぶかもしれないので）
+function renderAdminProducts(){ renderProducts(); }
+function createProduct(){ const name=$("new-prod-name").value.trim(); if(!name){ $("prod-msg").innerHTML=`<div class="message info">${t("msg_enter_product")}</div>`; return; } state.products.push({ id:nextId("prod"), name, aliasName:"", manufacturer:$("new-prod-manufacturer").value.trim(), vendorId:null, catalogNumber:$("new-prod-catalog").value.trim(), category:$("new-prod-category").value, reorderPoint:Number($("new-prod-reorder").value||0), defaultUnit:"本", storageCondition:"RT", isActive:true }); $("prod-msg").innerHTML=`<div class="message success">${t("msg_created_product")}</div>`; renderAdminProducts(); }
+// renderAdminLocations は上記 renderLocations に統合済み
+function renderAdminAdjustments(){ const item=inventoryById(ui.currentDetailId) || state.inventory[0]; $("admin-adjustments").innerHTML=`<div class="grid grid-2"><div class="card"><h3>${t("adj_title")}</h3><div class="hint">${t("adj_hint")}</div><label>${t("lbl_adj_item")}</label><select id="adj-item">${state.inventory.map(i=>`<option value="${i.id}" ${i.id===item.id?"selected":""}>${i.displayName} / ${fmtQty(i.currentQuantity)} ${i.quantityUnit}</option>`).join("")}</select><label style="margin-top:10px">${t("adj_qty_label")}</label><input id="adj-qty" value="${fmtQty(item.currentQuantity)}"><label style="margin-top:10px">${t("move_reason_lbl")}</label><input id="adj-reason" value="${t('adj_default')}"><div style="margin-top:12px"><button class="btn" onclick="adjustInventory()">${t("btn_adj")}</button></div></div><div class="card"><h3>${t("move_title")}</h3><label>${t("lbl_adj_item")}</label><select id="move-item">${state.inventory.map(i=>`<option value="${i.id}" ${i.id===item.id?"selected":""}>${i.displayName}</option>`).join("")}</select><label style="margin-top:10px">${t("move_dest_label")}</label><select id="move-loc">${state.locations.map(l=>`<option value="${l.id}" ${l.id==="loc-box02"?"selected":""}>${locationPath(l.id)}</option>`).join("")}</select><label style="margin-top:10px">${t("move_reason_lbl")}</label><input id="move-reason" value="${t('move_default')}"><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="btn secondary" onclick="moveInventory()">${t("btn_move")}</button><button class="btn danger" onclick="discardInventory()">${t("btn_discard")}</button></div></div></div><div id="adj-msg"></div>`; }
+function adjustInventory(){ const item=inventoryById($("adj-item").value); const newQty=Number($("adj-qty").value); if(newQty < 0){ $("adj-msg").innerHTML=`<div class="message info">${t("msg_qty_check")}</div>`; return; } const delta=newQty - item.currentQuantity; item.currentQuantity=newQty; item.status=recalcInventoryStatus(item); eventPush({inventoryItemId:item.id,eventType:"ADJUST",quantityDelta:delta,quantityUnit:item.quantityUnit,actorUserId:ui.currentUserId,notes:$("adj-reason").value.trim() || t("adj_default")}); $("adj-msg").innerHTML=`<div class="message success">${t("msg_adj_done")}</div>`; renderInventory(); renderDetail(); renderAdminAudit(); }
+function moveInventory(){ const item=inventoryById($("move-item").value); const from=item.locationId; item.locationId=$("move-loc").value; eventPush({inventoryItemId:item.id,eventType:"MOVE",quantityDelta:0,quantityUnit:item.quantityUnit,actorUserId:ui.currentUserId,notes:`${locationPath(from)} → ${locationPath(item.locationId)} / ${$("move-reason").value.trim()}`}); $("adj-msg").innerHTML=`<div class="message success">${t("msg_moved")}</div>`; renderInventory(); renderLocations(); renderAdminAudit(); }
+// [FIX BUG-01] 廃棄後ステータスを DISPOSED に修正（LOW_STOCK は誤り）
+function discardInventory(){ const item=inventoryById($("move-item").value); const qty=item.currentQuantity; item.currentQuantity=0; item.status="DISPOSED"; eventPush({inventoryItemId:item.id,eventType:"DISCARD",quantityDelta:-qty,quantityUnit:item.quantityUnit,actorUserId:ui.currentUserId,notes:$("move-reason").value.trim() || t("e_DISCARD")}); $("adj-msg").innerHTML=`<div class="message success">${t("msg_discarded")}</div>`; renderInventory(); renderDetail(); renderAdminAudit(); }
+// CSV セル値エスケープ（カンマ・ダブルクォート・改行を含む場合に対応）
+function csvCell(v){
+  if(v==null) return "";
+  const s=String(v);
+  return (s.includes(",")||s.includes('"')||s.includes("\n"))
+    ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+function csvRow(arr){ return arr.map(csvCell).join(","); }
+function csvTemplateUsers(){
+  const header="name,email,role,memberCode,isActive";
+  const rows=state.users.map(u=>csvRow([u.name,u.email,u.role,u.memberCode||"",u.isActive?"true":"false"]));
+  return [header,...rows].join("\r\n");
+}
+function csvTemplateProducts(){
+  const header="name,aliasName,manufacturer,catalogNumber,category,defaultUnit,reorderPoint,storageCondition";
+  const rows=state.products.map(p=>csvRow([p.name,p.aliasName||"",p.manufacturer||"",p.catalogNumber||"",
+     p.category||"",p.defaultUnit||"",p.reorderPoint||"",p.storageCondition||""]));
+  return [header,...rows].join("\r\n");
+}
+function csvTemplateInventory(){
+  const header="displayName,productCatalogNumber,lotNumber,currentQuantity,quantityUnit,locationPath,status,expirationDate,receivedDate";
+  const rows=state.inventory.filter(i=>i.status!=="DISPOSED").map(i=>{
+    const p=i.productId?productById(i.productId):null;
+    return csvRow([i.displayName,p?.catalogNumber||"",i.lotNumber||"",
+      i.currentQuantity,i.quantityUnit,locationPath(i.locationId),
+      i.status,i.expirationDate||"",i.receivedDate||""]);
+  });
+  return [header,...rows].join("\r\n");
+}
+function downloadText(filename,text){
+  // CSV: UTF-8 BOM付きで保存 → Excel/Windows で文字化けしない
+  const isCsv  = filename.endsWith('.csv');
+  const isJson = filename.endsWith('.json');
+  const mime    = isCsv  ? 'text/csv;charset=utf-8'
+                : isJson ? 'application/json;charset=utf-8'
+                :          'text/plain;charset=utf-8';
+  const bom     = isCsv ? '\uFEFF' : '';   // UTF-8 BOM
+  const content = bom + text;
+  try{
+    // Blob 方式（http / https 環境）
+    const blob = new Blob([content], {type: mime});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  }catch(e){
+    // file:// プロトコル対応: data: URI 方式
+    const a = document.createElement('a');
+    a.href  = `data:${mime};charset=utf-8,` + encodeURIComponent(content);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+}
+function downloadJson(filename,obj){
+  downloadText(filename, JSON.stringify(obj,null,2));
+}
+function renderAdminImport(){
+  $("admin-import").innerHTML=`
+    <div class="grid grid-2" style="gap:18px">
+
+      <!-- CSV エクスポート -->
+      <div class="card">
+        <h3>${t("csv_title")}</h3>
+        <div class="hint">${t("csv_hint")}</div>
+        <div class="grid grid-3" style="margin-top:16px;gap:12px">
+          <div class="card" style="padding:14px">
+            <h4 style="margin:0 0 6px">${t("export_users_full")}</h4>
+            <div class="small muted" style="margin-bottom:10px">${state.users.length} 件</div>
+            <button class="btn secondary" style="width:100%" onclick="downloadText('users_${TODAY}.csv', csvTemplateUsers())">${t("csv_dl")}</button>
+          </div>
+          <div class="card" style="padding:14px">
+            <h4 style="margin:0 0 6px">${t("export_products_full")}</h4>
+            <div class="small muted" style="margin-bottom:10px">${state.products.length} 件</div>
+            <button class="btn secondary" style="width:100%" onclick="downloadText('products_${TODAY}.csv', csvTemplateProducts())">${t("csv_dl")}</button>
+          </div>
+          <div class="card" style="padding:14px">
+            <h4 style="margin:0 0 6px">${t("export_inventory_full")}</h4>
+            <div class="small muted" style="margin-bottom:10px">${state.inventory.filter(i=>i.status!=="DISPOSED").length} 件</div>
+            <button class="btn secondary" style="width:100%" onclick="downloadText('inventory_${TODAY}.csv', csvTemplateInventory())">${t("csv_dl")}</button>
+          </div>
+        </div>
+        <div class="message warn" style="margin-top:14px">${t("csv_warn")}</div>
+      </div>
+
+      <!-- バックアップ / 復元 -->
+      <div class="card">
+        <h3>${t("backup_title")}</h3>
+        <div class="hint">${t("backup_hint")}</div>
+
+        <div style="margin-top:18px">
+          <h4 style="margin:0 0 8px">${t("backup_meta")}</h4>
+          <div class="fieldGrid" style="grid-template-columns:1fr 1fr;gap:8px">
+            <div class="field"><div class="k">${t("th_name")}</div><div class="v">Lab Inventory Mock v1</div></div>
+            <div class="field"><div class="k">${t("th_date")}</div><div class="v">${TODAY}</div></div>
+            <div class="field"><div class="k">${t("admin_user_count")}</div><div class="v">${state.users.length} 件</div></div>
+            <div class="field"><div class="k">${t("admin_inv_count")}</div><div class="v">${state.inventory.length} 件</div></div>
+            <div class="field"><div class="k">${t("th_product")}</div><div class="v">${state.products.length} 件</div></div>
+            <div class="field"><div class="k">${t("sec_requests")}</div><div class="v">${state.requests.length} 件</div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
+          <button class="btn" onclick="backupData()" style="background:#2563eb">
+            ${t("backup_btn")}
+          </button>
+          <div style="border-top:1px solid var(--line);padding-top:12px">
+            <div class="hint" style="margin-bottom:10px">${t("restore_hint")}</div>
+            <button class="btn secondary" onclick="restoreData()" style="border-color:#d97706;color:#d97706">
+              ${t("restore_btn")}
+            </button>
+          </div>
+          <div id="restore-msg"></div>
+        </div>
+      </div>
+
+    </div>`;
+}
+function renderAdminAudit(){ $("admin-audit").innerHTML=`<div class="card"><h3>${t("audit_title")}</h3><div class="hint">${t("audit_hint")}</div><div class="tableWrap"><table><thead><tr><th>${t("th_date")}</th><th>${t("th_actor")}</th><th>${t("th_target")}</th><th>${t("th_ops")}</th><th>${t("th_content")}</th></tr></thead><tbody>${state.events.map(e=>`<tr><td>${e.eventAt}</td><td>${actorName(e.actorUserId)}</td><td>${inventoryById(e.inventoryItemId)?.displayName || "-"}</td><td>${eventLabel(e.eventType)}</td><td>${e.notes || "-"}</td></tr>`).join("")}</tbody></table></div></div>`; }
+
+// ═══════════════════════════════════════════════════════
+// 発注状況ボード
+// ═══════════════════════════════════════════════════════
+function renderOrderBoard(){
+  // 対象: SUBMITTED / APPROVED / ORDERED / PARTIALLY_RECEIVED
+  const ACTIVE = ["SUBMITTED","APPROVED","ORDERED","PARTIALLY_RECEIVED"];
+  const reqs = [...state.requests.filter(r=>ACTIVE.includes(r.status))]
+    .sort((a,b)=>{
+      // ステータス順: ORDERED→PARTIALLY_RECEIVED→APPROVED→SUBMITTED
+      const order={ORDERED:0,PARTIALLY_RECEIVED:1,APPROVED:2,SUBMITTED:3};
+      const sd = (order[a.status]??9)-(order[b.status]??9);
+      if(sd!==0) return sd;
+      return priorityOrder(a.priority)-priorityOrder(b.priority);
+    });
+
+  if(!reqs.length){
+    $("order-board").innerHTML=`<div class="card"><div class="muted">${t("order_board_empty")}</div></div>`;
+    return;
+  }
+
+  // ステータスラベルマップ
+  const statusLabel_ob = {
+    SUBMITTED: t("ob_submitted"),
+    APPROVED:  t("ob_approved"),
+    ORDERED:   t("ob_ordered"),
+    PARTIALLY_RECEIVED: t("ob_partial"),
+  };
+  const statusColor = {
+    SUBMITTED:"#eef2ff:#3730a3",
+    APPROVED:"#fef3c7:#a16207",
+    ORDERED:"#dcfce7:#166534",
+    PARTIALLY_RECEIVED:"#dbeafe:#1d4ed8",
+  };
+
+  // 品目行を生成（依頼の各 line を1行として展開）
+  const rows = [];
+  reqs.forEach(req=>{
+    req.lines.forEach(line=>{
+      const rcv = receivedQtyForLine(line.id);
+      const total = Number(line.quantityRequested)||0;
+      const pct = total>0 ? Math.round(rcv/total*100) : 0;
+      const [bg, col] = (statusColor[req.status]||"#f1f5f9:#475569").split(":");
+      rows.push({ req, line, rcv, total, pct, bg, col });
+    });
+  });
+
+  $("order-board").innerHTML=`
+    <div class="card">
+      <div class="hint">${t("order_board_sub")}</div>
+      <div class="tableWrap">
+        <table>
+          <thead><tr>
+            <th style="min-width:100px">${t("th_status")}</th>
+            <th>${t("lbl_priority_badge")}</th>
+            <th>${t("th_req_no")}</th>
+            <th>${t("approval_requester")}</th>
+            <th>${t("th_product")}</th>
+            <th style="min-width:80px">${t("ob_qty_req")}</th>
+            <th style="min-width:80px">${t("ob_qty_rcv")}</th>
+            <th style="min-width:120px">${t("ob_progress")}</th>
+            <th>${t("fld_submitted")}</th>
+            <th>${t("fld_approved")}</th>
+            <th>${t("fld_ordered")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            ${rows.map(({req,line,rcv,total,pct,bg,col})=>`
+            <tr style="border-left:4px solid ${col};background:${bg}18">
+              <td>
+                <span style="display:inline-block;padding:4px 8px;border-radius:8px;font-size:12px;font-weight:800;background:${bg};color:${col}">
+                  ${statusLabel_ob[req.status]||statusLabel(req.status)}
+                </span>
+              </td>
+              <td><span class="badge b-priority-${req.priority?.toLowerCase()}" style="font-size:11px;padding:3px 8px">${priorityBadge(req.priority)}</span></td>
+              <td style="font-weight:700;font-size:13px">${req.requestNo}</td>
+              <td class="small">${userById(req.requesterId)?.name||"-"}</td>
+              <td>
+                <div style="font-weight:700">${line.productNameSnapshot}</div>
+                <div class="small muted">${line.manufacturerSnapshot||""} ${line.catalogNumberSnapshot||""}</div>
+              </td>
+              <td style="text-align:right;font-weight:700">${fmtQty(total)} ${line.quantityUnit}</td>
+              <td style="text-align:right;color:${rcv>0?"var(--green)":"var(--muted)"}">${rcv>0?fmtQty(rcv)+" "+line.quantityUnit:"-"}</td>
+              <td>
+                <div style="background:#e5e7eb;border-radius:999px;height:8px;margin-bottom:2px">
+                  <div style="background:${pct>=100?"#16a34a":pct>0?"#2563eb":"#e5e7eb"};width:${pct}%;height:8px;border-radius:999px;transition:width .3s"></div>
+                </div>
+                <div class="small muted" style="text-align:right">${pct}%</div>
+              </td>
+              <td class="small muted">${req.submittedAt||"-"}</td>
+              <td class="small muted">${req.approvedAt||"-"}</td>
+              <td class="small muted">${req.orderedAt||"-"}</td>
+              <td>
+                <button class="btn secondary" style="padding:4px 8px;font-size:12px;white-space:nowrap"
+                  onclick="openRequestDetail('${req.id}')">${t("btn_detail")}</button>
+              </td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// 教授・秘書ダッシュボード
+// ═══════════════════════════════════════════════════════
+function renderProfDashboard(){
+  const el = $("prof-dashboard");
+  if(!el) return;
+  const isProf = ui.currentRole === "PROFESSOR";
+  const isSec  = ui.currentRole === "SECRETARY";
+  if(!isProf && !isSec){ el.innerHTML=""; return; }
+
+  // ── KPI データ ────────────────────────────────────────
+  const pendingApprovals = state.requests.filter(r=>r.status==="SUBMITTED");
+  const ordered = state.requests.filter(r=>["ORDERED","PARTIALLY_RECEIVED"].includes(r.status));
+  const low = state.inventory.filter(i=>i.status==="LOW_STOCK"&&i.status!=="DISPOSED");
+  const expiring = state.inventory.filter(i=>i.expirationDate&&i.status!=="DISPOSED"&&i.expirationDate<=new Date(Date.now()+30*864e5).toISOString().slice(0,10));
+  const TODAY_RECV = state.receipts?.filter(r=>r.receivedDate===TODAY)||[];
+
+  // ── 承認待ちクイックリスト ─────────────────────────────
+  const quickAppList = [...pendingApprovals].sort((a,b)=>priorityOrder(a.priority)-priorityOrder(b.priority)).slice(0,5);
+
+  // ── 受領待ちリスト（秘書向け） ─────────────────────────
+  const recvWaiting = [...ordered].sort((a,b)=>priorityOrder(a.priority)-priorityOrder(b.priority)).slice(0,5);
+
+  // ── 最近の承認履歴 ─────────────────────────────────────
+  const recentApproved = state.requests.filter(r=>r.approverId===ui.currentUserId&&["APPROVED","REJECTED","ORDERED","COMPLETED","PARTIALLY_RECEIVED"].includes(r.status)).slice(-5).reverse();
+
+  // ── 最近の受領履歴（秘書向け） ─────────────────────────
+  const recentRecv = (state.receipts||[]).filter(r=>r.receivedById===ui.currentUserId).slice(-5).reverse();
+
+  el.innerHTML=`
+    <div class="grid grid-4" style="margin-bottom:18px">
+      <div class="card">
+        <div class="small muted" style="color:var(--red);font-weight:700">${t("kpi_pending_approval")}</div>
+        <div class="metric" style="color:var(--red)">${pendingApprovals.length}</div>
+      </div>
+      <div class="card">
+        <div class="small muted" style="color:#2563eb;font-weight:700">${t("kpi_ordered")}</div>
+        <div class="metric" style="color:#2563eb">${ordered.length}</div>
+      </div>
+      <div class="card">
+        <div class="small muted" style="color:#d97706;font-weight:700">${t("dash_low")}</div>
+        <div class="metric" style="color:#d97706">${low.length}</div>
+      </div>
+      <div class="card">
+        <div class="small muted" style="color:#7c3aed;font-weight:700">${t("dash_expiring")}</div>
+        <div class="metric" style="color:#7c3aed">${expiring.length}</div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+
+      <!-- 承認待ちクイックリスト -->
+      <div class="card">
+        <h3>${t("quick_approvals")}</h3>
+        <div class="hint">${t("quick_approvals_hint")}</div>
+        <div class="list" style="margin-top:12px">
+          ${quickAppList.length===0
+            ? `<div class="muted">${t("no_pending_approval")}</div>`
+            : quickAppList.map(r=>`
+              <div class="listItem">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                  <div>
+                    <div style="font-weight:700">${r.requestNo}</div>
+                    <div class="small muted">${userById(r.requesterId)?.name||"-"} / ${r.purpose||"-"}</div>
+                    <div class="small muted">${t("fld_submitted")}: ${r.submittedAt||"-"}</div>
+                    <div class="small muted">${r.lines.map(l=>l.productNameSnapshot).join("、")}</div>
+                  </div>
+                  <span class="badge b-priority-${r.priority?.toLowerCase()}" style="font-size:11px;padding:3px 8px;white-space:nowrap">${priorityBadge(r.priority)}</span>
+                </div>
+                <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+                  <button class="btn" style="padding:5px 10px;font-size:12px;background:#16a34a"
+                    onclick="quickApprove('${r.id}')">
+                    ${t("btn_quick_approve")}
+                  </button>
+                  <button class="btn secondary" style="padding:5px 10px;font-size:12px;border-color:#dc2626;color:#dc2626"
+                    onclick="quickReject('${r.id}')">
+                    ${t("btn_quick_reject")}
+                  </button>
+                  <button class="btn secondary" style="padding:5px 10px;font-size:12px"
+                    onclick="ui.currentRequestId='${r.id}';activateSection('approval-detail')">
+                    ${t("btn_detail")}
+                  </button>
+                </div>
+              </div>`).join("")}
+        </div>
+      </div>
+
+      <!-- 受領待ち / 最近の承認履歴 -->
+      <div class="card">
+        ${isSec ? `
+          <h3>${t("quick_recv")}</h3>
+          <div class="hint">${t("quick_recv_hint")}</div>
+          <div class="list" style="margin-top:12px">
+            ${recvWaiting.length===0
+              ? `<div class="muted">${t("no_recv_waiting")}</div>`
+              : recvWaiting.map(r=>`
+                <div class="listItem">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                    <div>
+                      <div style="font-weight:700">${r.requestNo}</div>
+                      <div class="small muted">${userById(r.requesterId)?.name||"-"}</div>
+                      <div class="small muted">${r.lines.map(l=>`${l.productNameSnapshot} ${fmtQty(l.quantityRequested)}${l.quantityUnit}`).join("、")}</div>
+                      <div class="small muted">${t("fld_ordered")}: ${r.orderedAt||"-"}</div>
+                    </div>
+                    <span class="badge b-priority-${r.priority?.toLowerCase()}" style="font-size:11px;padding:3px 8px;white-space:nowrap">${priorityBadge(r.priority)}</span>
+                  </div>
+                  <div style="margin-top:8px">
+                    <button class="btn" style="padding:5px 10px;font-size:12px;background:#2563eb"
+                      onclick="ui.currentRequestId='${r.id}';activateSection('receipts')">
+                      ${t("goto_recv")}
+                    </button>
+                  </div>
+                </div>`).join("")}
+          </div>
+        ` : `
+          <h3>${t("recent_approved")}</h3>
+          <div class="list" style="margin-top:8px">
+            ${recentApproved.length===0
+              ? `<div class="muted">${t("msg_no_events")}</div>`
+              : recentApproved.map(r=>`
+                <div class="listItem">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <div>
+                      <div style="font-weight:700">${r.requestNo}</div>
+                      <div class="small muted">${userById(r.requesterId)?.name||"-"} / ${r.purpose||"-"}</div>
+                    </div>
+                    <span class="badge ${statusClass(r.status)}">${statusLabel(r.status)}</span>
+                  </div>
+                </div>`).join("")}
+          </div>
+        `}
+      </div>
+
+    </div>
+
+    <!-- 低在庫アラート -->
+    ${low.length>0 ? `
+    <div class="card" style="margin-top:18px">
+      <h3>${t("dash_low_alert")} (${low.length}${ui.lang==="en"?" items":"件"})</h3>
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>${t("th_product")}</th><th>${t("th_remaining")}</th><th>${t("th_location")}</th><th></th></tr></thead>
+          <tbody>${low.map(i=>`
+            <tr>
+              <td style="font-weight:700">${i.displayName}</td>
+              <td style="color:var(--red);font-weight:700">${fmtQty(i.currentQuantity)} ${i.quantityUnit}</td>
+              <td class="small muted">${locationPath(i.locationId)}</td>
+              <td><button class="btn secondary" style="padding:4px 8px;font-size:12px"
+                onclick="prefillRequestFromInventory('${i.id}')">${t("btn_place_order")}</button></td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ""}
+  `;
+}
+// 教授・秘書ダッシュボードから直接承認・差し戻し
+function quickApprove(reqId){
+  const req = requestById(reqId);
+  if(!req || req.status !== "SUBMITTED") return;
+  req.status = "APPROVED";
+  req.approverId = ui.currentUserId;
+  req.approvedAt = TODAY;
+  req.approvalComment = "";
+  render();
+}
+function quickReject(reqId){
+  const req = requestById(reqId);
+  if(!req || req.status !== "SUBMITTED") return;
+  req.status = "REJECTED";
+  req.approverId = ui.currentUserId;
+  req.approvedAt = TODAY;
+  req.approvalComment = t("btn_quick_reject");
+  render();
+}
+
+// ═══════════════════════════════════════════════════════
+// バックアップ / 復元
+// ═══════════════════════════════════════════════════════
+function backupData(){
+  const payload = {
+    _meta:{ version:"v1", exportedAt: new Date().toISOString(), app:"Lab Inventory Mock" },
+    state: state,
+  };
+  downloadJson("lab_inventory_backup_"+TODAY+".json", payload);
+}
+function restoreData(){
+  if(!confirm(t("restore_confirm"))) return;
+  const input = document.createElement("input");
+  input.type = "file"; input.accept = ".json,application/json";
+  input.onchange = e => {
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try{
+        const payload = JSON.parse(ev.target.result);
+        const newState = payload.state || payload; // 旧形式互換
+        // 最低限のキーチェック
+        if(!newState.users || !newState.inventory || !newState.products)
+          throw new Error("invalid");
+        state = newState;
+        $("restore-msg").innerHTML=`<div class="message success">${t("restore_ok")}</div>`;
+        render();
+      }catch(err){
+        $("restore-msg").innerHTML=`<div class="message info">${t("restore_err")}</div>`;
+      }
+    };
+    reader.readAsText(file);
+  };
+  document.body.appendChild(input); input.click(); input.remove();
+}
+
+function render(){ renderOrderBoard(); renderProfDashboard(); renderDashboard(); renderInventory(); renderDetail(); renderRequestNew(); renderRequests(); renderRequestDetail(); renderApprovals(); renderApprovalDetail(); renderReceipts(); renderReceiptHistory(); renderAliquots(); renderBatches(); renderLocations(); renderProducts(); renderRecipes(); renderAdminHome(); renderAdminUsers(); renderAdminAdjustments(); renderAdminImport(); renderAdminAudit(); saveState(); }
+</script>
+</body>
+</html>
