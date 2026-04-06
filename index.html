@@ -750,7 +750,24 @@ const initialState = {
     },
   ]
 };
-let state = JSON.parse(JSON.stringify(initialState));
+// localStorage から state を復元、なければ initialState を使う
+function loadStateFromStorage(){
+  try{
+    const saved = localStorage.getItem("labInventoryState");
+    if(saved){
+      const parsed = JSON.parse(saved);
+      // バージョン確認（initialState にないキーが増えた場合の互換対応）
+      if(parsed && parsed.users && parsed.inventory && parsed.products){
+        return parsed;
+      }
+    }
+  }catch(e){ /* 壊れていたら無視 */ }
+  return JSON.parse(JSON.stringify(initialState));
+}
+function saveState(){
+  try{ localStorage.setItem("labInventoryState", JSON.stringify(state)); }catch(e){}
+}
+let state = loadStateFromStorage();
 // [FIX BUG-03] currentRequestId を null に — 他人の依頼をデフォルト表示しない
 // 追加: editingDraftId / pendingLines / pendingBatchComps
 let ui = {
@@ -779,8 +796,13 @@ function productById(id){ return state.products.find(p=>p.id===id); }
 function requestById(id){ return state.requests.find(r=>r.id===id); }
 function locationById(id){ return state.locations.find(l=>l.id===id); }
 function inventoryById(id){ return state.inventory.find(i=>i.id===id); }
-function loadDemo(){ state = clone(initialState); populateUsers(($("loginRole") && $("loginRole").value) || "STUDENT"); }
-function logout(){ $("appView").classList.add("hidden"); $("loginView").classList.remove("hidden"); }
+function loadDemo(){ state = clone(initialState); saveState(); populateUsers(($("loginRole") && $("loginRole").value) || "STUDENT"); }
+function logout(){
+  saveState(); // ログアウト前に保存
+  $("appView").classList.add("hidden");
+  $("loginView").classList.remove("hidden");
+  ui.currentUserId = ""; ui.currentRole = "";
+}
 function populateUsers(role){
   const select = $("loginUser");
   const users = state.users.filter(u => u.role === role);
@@ -794,9 +816,13 @@ function initLoginSelectors(){
   populateUsers(roleSelect.value || "STUDENT");
   roleSelect.addEventListener("change", ()=>populateUsers(roleSelect.value));
 }
+// 言語設定を復元
+try{ const _sl=localStorage.getItem("labInventoryLang"); if(_sl) ui.lang=_sl; }catch(e){}
+updateLoginUI();
 initLoginSelectors();
 function toggleLang(){
   ui.lang = ui.lang==="ja"?"en":"ja";
+  try{ localStorage.setItem("labInventoryLang", ui.lang); }catch(e){}
   const lb=$("langToggle"); if(lb) lb.textContent=ui.lang==="ja"?"🌐 EN":"🌐 JP";
   const llb=$("loginLangToggle"); if(llb) llb.textContent=ui.lang==="ja"?"🌐 EN":"🌐 JP";
   updateLoginUI();
@@ -2502,7 +2528,7 @@ function restoreData(){
   document.body.appendChild(input); input.click(); input.remove();
 }
 
-function render(){ renderOrderBoard(); renderProfDashboard(); renderDashboard(); renderInventory(); renderDetail(); renderRequestNew(); renderRequests(); renderRequestDetail(); renderApprovals(); renderApprovalDetail(); renderReceipts(); renderReceiptHistory(); renderAliquots(); renderBatches(); renderLocations(); renderProducts(); renderRecipes(); renderAdminHome(); renderAdminUsers(); renderAdminAdjustments(); renderAdminImport(); renderAdminAudit(); }
+function render(){ renderOrderBoard(); renderProfDashboard(); renderDashboard(); renderInventory(); renderDetail(); renderRequestNew(); renderRequests(); renderRequestDetail(); renderApprovals(); renderApprovalDetail(); renderReceipts(); renderReceiptHistory(); renderAliquots(); renderBatches(); renderLocations(); renderProducts(); renderRecipes(); renderAdminHome(); renderAdminUsers(); renderAdminAdjustments(); renderAdminImport(); renderAdminAudit(); saveState(); }
 </script>
 </body>
 </html>
