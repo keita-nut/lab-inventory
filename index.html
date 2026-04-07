@@ -93,6 +93,9 @@
       .two-col,.grid-4,.grid-3,.grid-2,.fieldGrid{grid-template-columns:1fr}
     }
   </style>
+  <!-- Firebase SDK (共有データベース用) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 </head>
 <body>
 <div id="loginView" class="loginWrap">
@@ -114,6 +117,7 @@
     <div style="display:flex;gap:10px;margin-top:16px">
       <button class="btn" id="loginBtn" onclick="login()">ログイン</button>
     </div>
+    <div id="loginDbStatus" style="margin-bottom:8px;padding:6px 12px;border-radius:8px;font-size:13px;text-align:center;background:#dcfce7;color:#166534;font-weight:600">⏳ データベース接続中...</div>
     <div class="message info" id="loginHint" style="margin-top:12px">フロントモックです。主要業務フローを一通り試せます。</div>
   </div>
 </div>
@@ -750,24 +754,117 @@ const initialState = {
     },
   ]
 };
-// localStorage から state を復元、なければ initialState を使う
+// ══════════════════════════════════════════════════════
+// Firebase Realtime Database — 共有データ同期
+// ══════════════════════════════════════════════════════
+// ▼▼▼ ここに自分の Firebase 設定を貼り付けてください ▼▼▼
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDf3gYvqOtvKm6yJrOIXFWDeLnmDA40xSg",
+  authDomain:        "kyo9454.firebaseapp.com",
+  databaseURL:       "https://kyo9454-default-rtdb.firebaseio.com",
+  projectId:         "kyo9454",
+  storageBucket:     "kyo9454.firebasestorage.app",
+  messagingSenderId: "105432263852",
+  appId:             "1:105432263852:web:b16b7f343d1d4bc5e9c309",
+  measurementId:     "G-4ZQRM12MT4",
+};
+// ▲▲▲ ここまで ▲▲▲
+
+// Firebase を初期化（設定が入っていれば有効化）
+const FIREBASE_ENABLED = FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY";
+let _db = null;
+const DB_PATH = "labInventoryState";  // Realtime DB のパス
+
+if(FIREBASE_ENABLED){
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    _db = firebase.database();
+  }catch(e){ console.warn("Firebase 初期化失敗（ローカルモードで動作）", e); }
+}
+
+// ── 保存 ──────────────────────────────────────────────
+function saveState(){
+  if(_db){
+    // Firebase に保存（全員が同じデータを参照）
+    _db.ref(DB_PATH).set(state).catch(e=>console.warn("Firebase 保存エラー:", e));
+  } else {
+    // フォールバック: localStorage（オフライン時・未設定時）
+    try{ localStorage.setItem("labInventoryState", JSON.stringify(state)); }catch(e){}
+  }
+}
+
+// ── 起動時ロード ──────────────────────────────────────
 function loadStateFromStorage(){
+  // Firebase 未設定時 → localStorage フォールバック
   try{
     const saved = localStorage.getItem("labInventoryState");
     if(saved){
       const parsed = JSON.parse(saved);
-      // バージョン確認（initialState にないキーが増えた場合の互換対応）
-      if(parsed && parsed.users && parsed.inventory && parsed.products){
-        return parsed;
-      }
+      if(parsed && parsed.users && parsed.inventory && parsed.products) return parsed;
     }
-  }catch(e){ /* 壊れていたら無視 */ }
+  }catch(e){}
   return JSON.parse(JSON.stringify(initialState));
 }
-function saveState(){
-  try{ localStorage.setItem("labInventoryState", JSON.stringify(state)); }catch(e){}
+
+// Firebase からリアルタイム同期を開始（ログイン後に呼ぶ）
+function startFirebaseSync(){
+  if(!_db) return;
+  _db.ref(DB_PATH).on("value", snapshot => {
+    const data = snapshot.val();
+    if(data && data.users && data.inventory && data.products){
+      state = data;
+      // 画面が表示中なら再描画
+      if($("appView") && !$("appView").classList.contains("hidden")){
+        render();
+        renderNav();
+      }
+    }
+  }, err => console.warn("Firebase 同期エラー:", err));
 }
-let state = loadStateFromStorage();
+
+function stopFirebaseSync(){
+  if(_db) _db.ref(DB_PATH).off();
+}
+
+// 初回: Firebase から最新データを取得してから起動
+let state = JSON.parse(JSON.stringify(initialState)); // 暫定初期値
+let _firebaseReady = false;
+
+async function initState(){
+  if(_db){
+    try{
+      const snapshot = await _db.ref(DB_PATH).once("value");
+      const data = snapshot.val();
+      if(data && data.users && data.inventory && data.products){
+        state = data;
+      } else {
+        // Firebase に初期データがなければ seed データを書き込む
+        await _db.ref(DB_PATH).set(JSON.parse(JSON.stringify(initialState)));
+        state = JSON.parse(JSON.stringify(initialState));
+      }
+    }catch(e){
+      console.warn("Firebase 初期ロード失敗:", e);
+      state = loadStateFromStorage();
+    }
+  } else {
+    state = loadStateFromStorage();
+  }
+  _firebaseReady = true;
+  // 接続状態インジケーター更新
+  const statusEl = $("loginDbStatus");
+  if(statusEl){
+    if(_db){
+      statusEl.textContent = "🌐 共有データベース接続済み — 全員が同じデータを使います";
+      statusEl.style.background = "#dcfce7"; statusEl.style.color = "#166534";
+    } else {
+      statusEl.textContent = "💾 ローカルモード（このブラウザのみ）— Firebase未設定";
+      statusEl.style.background = "#fef3c7"; statusEl.style.color = "#92400e";
+    }
+  }
+  populateUsers(($("loginRole") && $("loginRole").value) || "STUDENT");
+}
+
+initState();
 // [FIX BUG-03] currentRequestId を null に — 他人の依頼をデフォルト表示しない
 // 追加: editingDraftId / pendingLines / pendingBatchComps
 let ui = {
@@ -796,9 +893,17 @@ function productById(id){ return state.products.find(p=>p.id===id); }
 function requestById(id){ return state.requests.find(r=>r.id===id); }
 function locationById(id){ return state.locations.find(l=>l.id===id); }
 function inventoryById(id){ return state.inventory.find(i=>i.id===id); }
-function loadDemo(){ state = clone(initialState); saveState(); populateUsers(($("loginRole") && $("loginRole").value) || "STUDENT"); }
+function loadDemo(){
+  if(_db){
+    if(!confirm(ui.lang==="en"?"Reset ALL shared data to demo? This affects everyone.":"全員の共有データをデモデータにリセットしますか？全ユーザーのデータが消えます。")) return;
+  }
+  state = clone(initialState);
+  saveState();
+  populateUsers(($("loginRole") && $("loginRole").value) || "STUDENT");
+}
 function logout(){
-  saveState(); // ログアウト前に保存
+  stopFirebaseSync();
+  saveState();
   $("appView").classList.add("hidden");
   $("loginView").classList.remove("hidden");
   ui.currentUserId = ""; ui.currentRole = "";
@@ -851,7 +956,9 @@ function updateLoginUI(){
   }
 }
 
-function login(){ ui.currentRole = $("loginRole").value; ui.currentUserId = $("loginUser").value; ui.currentRequestId=null; ui.editingDraftId=null; ui.pendingLines=[]; ui.pendingBatchComps=[]; $("loginView").classList.add("hidden"); $("appView").classList.remove("hidden"); renderNav(); updateTopbar(); gotoByRoleHome(); }
+function login(){
+  if(!_firebaseReady){ setTimeout(()=>login(), 200); return; } // 初期化待ち
+  ui.currentRole = $("loginRole").value; ui.currentUserId = $("loginUser").value; ui.currentRequestId=null; ui.editingDraftId=null; ui.pendingLines=[]; ui.pendingBatchComps=[]; $("loginView").classList.add("hidden"); $("appView").classList.remove("hidden"); startFirebaseSync(); renderNav(); updateTopbar(); gotoByRoleHome(); }
 function gotoByRoleHome(){ activateSection(roleHomes[ui.currentRole]); }
 
 // [v4] レシピをナビに追加
